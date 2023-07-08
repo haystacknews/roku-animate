@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "brightscript",
+            "request": "launch",
+            "host": "${promptForHost}",
+            "stopOnEntry": false,
+            "enableDebuggerAutoRecovery": false,
+            "stopDebuggerOnAppExit": false,
+            "rootDir": "${workspaceFolder}/dist/build",
+            "preLaunchTask": "build",
+            "name": "Launch animate (dev)",
+            "injectRdbOnDeviceComponent": true
+        },
+        {
+            "type": "brightscript",
+            "request": "launch",
+            "host": "${promptForHost}",
+            "stopOnEntry": false,
+            "enableDebuggerAutoRecovery": false,
+            "stopDebuggerOnAppExit": false,
+            "rootDir": "${workspaceFolder}/dist/build",
+            "preLaunchTask": "build-prod",
+            "name": "Launch animate (prod)"
+        }
+    ]
+}

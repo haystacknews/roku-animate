@@ -1,0 +1,4 @@
+dist/
+out/
+bsconfig.json
+node_modules
