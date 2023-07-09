@@ -2,6 +2,7 @@ import "pkg:/source/animate.bs"
 
 sub init()
     m.square1 = createSquareAndShadow({
+        id: "square",
         translation: [200, 200]
     })
 end sub
@@ -9,11 +10,25 @@ end sub
 sub start(_ = invalid as dynamic)
     m.animation = animate({
         targets: m.square1,
-        easeFunction: "linear",
-        key: [0, 1],
-        translateX: 400,
-        scale: 2
+        translateX: {
+            value: 450,
+            duration: 0.8,
+            easeFunction: "linear"
+        },
+        rotation: {
+            value: "-360deg",
+            duration: 1.8
+        },
+        scale: {
+            value: 2,
+            duration: 1.6,
+            delay: 0.8,
+            easeFunction: "inOutQuartic"
+        },
+        color: "#FAFA33",
+        delay: 0.25
     })
+
     m.animation.control = "start"
 end sub
 
@@ -21,7 +36,8 @@ function createSquareAndShadow(_squareFields as object) as object
     squareFields = {
         width: 100,
         height: 100,
-        color: "#FF4B4B"
+        color: "#FF4B4B",
+        scaleRotateCenter: [50, 50]
     }
 
     squareFields.append(_squareFields)

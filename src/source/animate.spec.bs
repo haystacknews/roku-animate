@@ -231,5 +231,75 @@ class TestSuite extends rooibos.BaseTestSuite
 
         m.assertEqual(result.children[0].keyValue, [[1, 1], [2, 2]])
     end function
+
+    @describe("object properties")
+
+    @it("specific parameters per property")
+    function _()
+        result = _animate({
+            targets: m.r1,
+            translateX: {
+                value: 450,
+                duration: 0.8,
+                easeFunction: "linear"
+            },
+            rotation: {
+                value: "-360deg",
+                duration: 1.8
+            },
+            scale: {
+                value: 2,
+                duration: 1.6,
+                ' all the other animations will inherit delay = 0.25
+                ' except this one
+                delay: 0.8,
+                easeFunction: "inOutQuartic"
+            },
+            color: "#FAFA33",
+            delay: 0.25
+        })
+        
+        m.assertEqual(result.subtype, animateUtils.NodeNames.ParallelAnimation)
+        m.assertArrayCount(result.children, 4)
+
+        ' Roku automatically transforms AAs to have
+        ' their keys alphabetically ordered.
+        ' So we can expect to have the result children
+        ' in order: color, rotation, scale, translation
+
+        colorAnim = result.children[0]
+        rotationAnim = result.children[1]
+        scaleAnim = result.children[2]
+        translationAnim = result.children[3]
+
+        ' confirm that interpolators have correct values
+
+        m.assertEqual(colorAnim.children[0].subtype, animateUtils.NodeNames.ColorFieldInterpolator)
+        m.assertEqual(colorAnim.children[0].fieldToInterp, "r1.color")
+
+        m.assertEqual(rotationAnim.children[0].subtype, animateUtils.NodeNames.FloatFieldInterpolator)
+        m.assertEqual(rotationAnim.children[0].fieldToInterp, "r1.rotation")
+    
+        m.assertEqual(scaleAnim.children[0].subtype, animateUtils.NodeNames.Vector2DFieldInterpolator)
+        m.assertEqual(scaleAnim.children[0].fieldToInterp, "r1.scale")
+
+        m.assertEqual(translationAnim.children[0].subtype, animateUtils.NodeNames.Vector2DFieldInterpolator)
+        m.assertEqual(translationAnim.children[0].fieldToInterp, "r1.translation")
+
+        ' confirm that animations are inheriting root
+        ' level values but conserving their specific values
+
+        m.assertEqual(translationAnim.duration, 0.8)
+        m.assertEqual(translationAnim.delay, 0.25)
+
+        m.assertEqual(rotationAnim.duration, 1.8)
+        m.assertEqual(rotationAnim.delay, 0.25)
+
+        m.assertEqual(scaleAnim.duration, 1.6)
+        m.assertEqual(scaleAnim.delay, 0.8)
+
+        m.assertEqual(colorAnim.duration, 1)
+        m.assertEqual(colorAnim.delay, 0.25)
+    end function
 end class
 end namespace

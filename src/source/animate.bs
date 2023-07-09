@@ -3,7 +3,7 @@ function animate(params as object) as object
     return animateUtils.createNodeFromAA(animation)
 end function
 
-function _animate(params as object) as object
+function _animate(params as object, recursive = true as boolean) as object
     animations = []
     animationParams = animateUtils.extractAnimationParams(params)
     if (animationParams.duration = invalid)
@@ -25,14 +25,40 @@ function _animate(params as object) as object
     targets = []
     if (params.target <> invalid)
         targets = params.target
+        params.delete("target")
     end if
 
     if (params.targets <> invalid)
         targets = params.targets
+        params.delete("targets")
     end if
 
     nodeTargets = getNodeTargets(targets)
-    params.delete("targets")
+
+    subAnimations = []
+
+    if (recursive)
+        subKeys = []
+
+        for each item in params.items()
+            if (is._aa(item.value))
+                subParams = {}
+                subParams.append(animationParams)
+                subParams.append(interpolatorParams)
+                subParams.targets = nodeTargets
+                subParams[item.key] = item.value.value
+                item.value.delete("value")
+                subParams.append(item.value)
+                subAnimation = _animate(subParams, false)
+                subAnimations.push(parseJson(formatJson(subAnimation)))
+                subKeys.push(item.key)
+            end if
+        end for
+
+        for each subKey in subKeys
+            params.delete(subKey)
+        end for
+    end if
 
     for each nodeTarget in nodeTargets
         if (nodeTarget.id = invalid or nodeTarget.id = "")
@@ -44,8 +70,14 @@ function _animate(params as object) as object
             children: getTargetInterpolators(nodeTarget, params, interpolatorParams)
         }
         animation.append(animationParams)
-        animations.push(parseJson(formatJson(animation)))
+        if (animation.children.count() > 0)
+            animations.push(parseJson(formatJson(animation)))
+        end if
     end for
+
+    if (recursive and subAnimations.count() > 0)
+        animations.append(subAnimations)
+    end if
 
     if (animations.count() > 1)
         multipleAnimations = {
@@ -191,6 +223,9 @@ namespace is
         return is.valid(x) and is.arr(x) and x.count() = 2 and is.number(x[0]) and is.number(x[1])
     end function
 
+    function _aa(x as dynamic) as boolean
+        return is.valid(x) and getInterface(x, "ifAssociativeArray") <> invalid
+    end function
     namespace special
         function prop(x as dynamic) as boolean
             return is.special.translation(x)
