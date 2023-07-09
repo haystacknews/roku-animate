@@ -1,0 +1,169 @@
+function animate(params as object) as object
+    nodeTargets = getNodeTargets(params.targets)
+    nodeTargetsCount = nodeTargets.count()
+    params.delete("targets")
+
+    finalAnimation = invalid
+    if (nodeTargetsCount > 1)
+        finalAnimation = CreateObject("roSGNode", "ParallelAnimation")
+    else
+        finalAnimation = CreateObject("roSGNode", "Animation")
+    end if
+
+    for each nodeTarget in nodeTargets
+        if (nodeTarget.id = invalid or nodeTarget.id = "")
+            nodeTarget.id = "__animate"
+        end if
+        interpolators = animateTarget(nodeTarget, params)
+
+        if (nodeTargetsCount > 1)
+            animation = CreateObject("roSGNode", "Animation")
+            animation.appendChildren(interpolators)
+        else
+            finalAnimation.appendChildren(interpolators)
+        end if
+    end for
+
+    animationParams = {
+        duration: 1,
+        easeFunction: "outCubic",
+        easeInPercent: 0.5,
+        easeOutPercent: 0.5
+    }
+
+    finalAnimation.update(animationParams)
+    return finalAnimation
+end function
+
+function animateTarget(nodeTarget as object, params as object) as object
+    interpolators = []
+
+    for each item in params.items()
+        ' Thanks Roku for not letting us split if statements
+        ' in multiple lines. This is very readable! :)
+        if (is.valid(item.value) and (is.specialAnimateProperty(item.key) or nodeTarget.hasField(item.key)))
+            interpolator = animateTargetProperty(nodeTarget, item.key, item.value)
+            if (interpolator <> invalid)
+                interpolators.push(interpolator)
+            end if
+        end if
+    end for
+    return interpolators
+end function
+
+function animateTargetProperty(nodeTarget as object, property as string, value as dynamic) as dynamic
+    if (is.specialAnimateProperty(property))
+        if (compareFieldStrings(property, "x"))
+            property = "translation"
+            value = [value, nodeTarget.translation[1]]
+        else if (compareFieldStrings(property, "y"))
+            property = "translation"
+            value = [nodeTarget.translation[0], value]
+        else if (compareFieldStrings(property, "translateX"))
+            property = "translation"
+            currentX = nodeTarget.translation[0]
+            value = [currentX + value, nodeTarget.translation[1]]
+        else if (compareFieldStrings(property, "translateY"))
+            property = "translation"
+            currentY = nodeTarget.translation[1]
+            value = [nodeTarget.translation[0], currentY + value]
+        end if
+    end if
+
+    currentValue = nodeTarget[property]
+
+    interpolator = invalid
+    if (property = "color")
+        interpolator = CreateObject("roSGNode", "ColorFieldInterpolator")
+    else if (is.arr(value))
+        interpolator = CreateObject("roSGNode", "Vector2DFieldInterpolator")
+    else if (is.number(value))
+        interpolator = CreateObject("roSGNode", "FloatFieldInterpolator")
+    else
+        return invalid
+    end if
+
+    interpolator.update({
+        fieldToInterp: `${nodeTarget.id}.${property}`,
+        key: [0, 1],
+        keyValue: [currentValue, value]
+    })
+
+    return interpolator
+end function
+
+function getNodeTargets(targets as dynamic) as object
+    nodeTargets = []
+
+    if (is.str(targets))
+        ' For a string `targets`, we split by spaces
+        ' and try to find the nodes in the current `m.top` scope.
+        ids = targets.tokenize(" ")
+        for each id in ids
+            nodeTarget = m.top.findNode(id)
+            if (is.valid(nodeTarget))
+                nodeTargets.push(nodeTarget)
+            end if
+        end for
+    else if (is.arr(targets))
+        ' For array targets, we recursively find targets inside
+        ' each element.
+        for each target in targets
+            nodeTargets.append(getNodeTargets(target))
+        end for
+    else if (is.node(targets))
+        ' For nodes we consider them directly
+        nodeTargets.push(targets)
+    end if
+
+    return nodeTargets
+end function
+
+namespace is
+    function valid(x as dynamic) as boolean
+        return x <> invalid
+    end function
+    
+    function str(x as dynamic) as boolean
+        return is.valid(x) and getInterface(x, "ifString") <> invalid
+    end function
+
+    function arr(x as dynamic) as boolean
+        return is.valid(x) and getInterface(x, "ifArray") <> invalid
+    end function
+
+    function integer(x as dynamic) as boolean
+        return is.valid(x) and getInterface(x, "ifInt") <> invalid and (type(x) = "roInt" or type(x) = "roInteger" or type(x) = "Integer")
+    end function
+
+    function float(x as dynamic) as boolean
+        return is.valid(x) and (getInterface(x, "ifFloat") <> invalid or (type(x) = "roFloat" Or type(x) = "Float"))
+    end function
+
+    function number(x as dynamic) as boolean
+        return is.float(x) or is.integer(x)
+    end function
+
+    function node(x as dynamic) as boolean
+        return is.valid(x) and getInterface(x, "ifSGNodeField") <> invalid
+    end function
+
+    function specialAnimateProperty(x as dynamic) as boolean
+        if (not is.str(x))
+            return false
+        end if
+
+        specialProperties = ["x", "y", "translateX", "translateY"]
+        for each specialProperty in specialProperties
+            if (compareFieldStrings(specialProperty, x))
+                return true
+            end if
+        end for
+
+        return false
+    end function
+end namespace
+
+function compareFieldStrings(x as string, y as string) as boolean
+    return lcase(x) = lcase(y)
+end function

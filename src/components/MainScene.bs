@@ -1,4 +1,31 @@
+import "pkg:/source/animate.bs"
+
 sub init()
-    label = m.top.findNode("welcome")
-    label.text = "Hello from create-roku-app"
+    m.square = CreateObject("roSGNode", "Rectangle")
+    m.square.update({
+        width: 100,
+        height: 100,
+        color: "#FF4B4B",
+        translation: [200, 200]
+    })
+    squareShadow = cloneNode(m.square)
+    squareShadow.opacity = 0.5
+    m.top.appendChild(squareShadow)
+    m.top.appendChild(m.square)
 end sub
+
+sub start(_ = invalid as dynamic)
+    m.animation = animate({
+        targets: m.square,
+        translateX: 400,
+        color: "#ffffff"
+    })
+    m.animation.duration = 4
+    m.animation.control = "start"
+end sub
+
+function cloneNode(oldNode as Object) as Object
+    newNode = createObject("roSGNode",oldNode.subtype()) 'subtyped node should automatically have all the fields of the original node
+    newNode.setFields(oldNode.getFields())
+    return newNode
+end function
