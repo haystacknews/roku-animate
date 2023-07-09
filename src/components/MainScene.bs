@@ -9,10 +9,10 @@ end sub
 sub start(_ = invalid as dynamic)
     m.animation = animate({
         targets: m.square1,
+        easeFunction: "linear",
+        key: [0, 1],
         translateX: 400,
-        scale: 2,
-        duration: 4,
-        delay: 3
+        scale: 2
     })
     m.animation.control = "start"
 end sub

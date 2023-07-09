@@ -1,5 +1,6 @@
 function animate(params as object) as object
     animations = _animate(params)
+
     if (animations.count() = 1)
         return animateUtils.createNodeFromAA(animations[0])
     end if
@@ -21,6 +22,14 @@ function _animate(params as object) as object
         params.delete(animationKey)
     end for
 
+    interpolatorParams = animateUtils.extractInterpolatorParams(params)
+    if (interpolatorParams.key = invalid)
+        interpolatorParams.key = [0, 1]
+    end if
+    for each interpolatorKey in interpolatorParams.keys()
+        params.delete(interpolatorKey)
+    end for
+
     nodeTargets = getNodeTargets(params.targets)
     params.delete("targets")
 
@@ -31,7 +40,7 @@ function _animate(params as object) as object
 
         animation = {
             subtype: "Animation",
-            children: getTargetInterpolators(nodeTarget, params)
+            children: getTargetInterpolators(nodeTarget, params, interpolatorParams)
         }
         animation.append(animationParams)
         animations.push(animation)
@@ -40,7 +49,7 @@ function _animate(params as object) as object
     return animations
 end function
 
-function getTargetInterpolators(nodeTarget as object, params as object) as object
+function getTargetInterpolators(nodeTarget as object, params as object, globalInterpolatorParams as object) as object
     interpolators = []
 
     for each item in params.items()
@@ -49,7 +58,9 @@ function getTargetInterpolators(nodeTarget as object, params as object) as objec
         if (is.valid(item.value) and (is.special.prop(item.key) or nodeTarget.hasField(item.key)))
             interpolator = getPropertyInterpolator(nodeTarget, item.key, item.value)
             if (interpolator <> invalid)
-                interpolators.push(interpolator)
+                finalInterpolator = globalInterpolatorParams
+                finalInterpolator.append(interpolator)
+                interpolators.push(finalInterpolator)
             end if
         end if
     end for
@@ -103,7 +114,6 @@ function getPropertyInterpolator(nodeTarget as object, property as string, value
 
     interpolator.append({
         fieldToInterp: `${nodeTarget.id}.${property}`,
-        key: [0, 1],
         keyValue: [currentValue, value]
     })
 
@@ -216,13 +226,29 @@ namespace animateUtils
         ]
     end function
 
-    function extractAnimationParams(params as object) as object
+    function getInterpolatorParams() as object
+        return [
+            "key",
+            "fraction",
+            "reverse"
+        ]
+    end function
+
+    function extractParams(source as object, wantedParams as object) as object
         result = {}
-        for each animationParam in animateUtils.getAnimationParams()
-            if (params[animationParam] <> invalid)
-                result[animationParam] = params[animationParam]
+        for each wantedParam in wantedParams
+            if (source[wantedParam] <> invalid)
+                result[wantedParam] = source[wantedParam]
             end if
         end for
         return result
+    end function
+
+    function extractAnimationParams(params as object) as object
+        return animateUtils.extractParams(params, animateUtils.getAnimationParams())
+    end function
+
+    function extractInterpolatorParams(params as object) as object
+        return animateUtils.extractParams(params, animateUtils.getInterpolatorParams())
     end function
 end namespace
