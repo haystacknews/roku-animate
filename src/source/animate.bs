@@ -1,4 +1,13 @@
 function animate(params as object) as object
+    animationParams = animateUtils.extractAnimationParams(params)
+    if (animationParams.duration = invalid)
+        animationParams.duration = 1
+    end if
+
+    for each animationKey in animationParams.keys()
+        params.delete(animationKey)
+    end for
+
     nodeTargets = getNodeTargets(params.targets)
     nodeTargetsCount = nodeTargets.count()
     params.delete("targets")
@@ -19,20 +28,14 @@ function animate(params as object) as object
         if (nodeTargetsCount > 1)
             animation = CreateObject("roSGNode", "Animation")
             animation.appendChildren(getInterpolatorNodes(interpolators))
+            animation.update(animationParams)
             finalAnimation.appendChild(animation)
         else
             finalAnimation.appendChildren(getInterpolatorNodes(interpolators))
+            finalAnimation.update(animationParams)
         end if
     end for
 
-    animationParams = {
-        duration: 1,
-        easeFunction: "outCubic",
-        easeInPercent: 0.5,
-        easeOutPercent: 0.5
-    }
-
-    finalAnimation.update(animationParams)
     return finalAnimation
 end function
 
@@ -48,7 +51,6 @@ function getInterpolatorNodes(interpolators as object) as object
 
     return nodes
 end function
-
 
 function getTargetInterpolators(nodeTarget as object, params as object) as object
     interpolators = []
@@ -75,18 +77,18 @@ function getPropertyInterpolator(nodeTarget as object, property as string, value
     end if
 
     if (is.special.translation(property))
-        property = "translation"
-        if (compareFieldStrings(property, "x"))
+        if (animateUtils.compareFieldStrings(property, "x"))
             value = [value, nodeTarget.translation[1]]
-        else if (compareFieldStrings(property, "y"))
+        else if (animateUtils.compareFieldStrings(property, "y"))
             value = [nodeTarget.translation[0], value]
-        else if (compareFieldStrings(property, "translateX"))
+        else if (animateUtils.compareFieldStrings(property, "translateX"))
             currentX = nodeTarget.translation[0]
             value = [currentX + value, nodeTarget.translation[1]]
-        else if (compareFieldStrings(property, "translateY"))
+        else if (animateUtils.compareFieldStrings(property, "translateY"))
             currentY = nodeTarget.translation[1]
             value = [nodeTarget.translation[0], currentY + value]
         end if
+        property = "translation"
     end if
 
     if (property = "rotation" and is.str(value) and value.endsWith("deg"))
@@ -192,7 +194,7 @@ namespace is
     
             specialProperties = ["x", "y", "translateX", "translateY"]
             for each specialProperty in specialProperties
-                if (compareFieldStrings(specialProperty, x))
+                if (animateUtils.compareFieldStrings(specialProperty, x))
                     return true
                 end if
             end for
@@ -202,6 +204,30 @@ namespace is
     end namespace
 end namespace
 
-function compareFieldStrings(x as string, y as string) as boolean
-    return lcase(x) = lcase(y)
-end function
+namespace animateUtils
+    function compareFieldStrings(x as string, y as string) as boolean
+        return lcase(x) = lcase(y)
+    end function
+
+    function getAnimationParams() as object
+        return [
+            "repeat",
+            "delay",
+            "duration",
+            "easeFunction",
+            "easeInPercent",
+            "easeOutPercent",
+            "optional"
+        ]
+    end function
+
+    function extractAnimationParams(params as object) as object
+        result = {}
+        for each animationParam in animateUtils.getAnimationParams()
+            if (params[animationParam] <> invalid)
+                result[animationParam] = params[animationParam]
+            end if
+        end for
+        return result
+    end function
+end namespace

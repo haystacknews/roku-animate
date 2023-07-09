@@ -9,8 +9,8 @@ end sub
 sub start(_ = invalid as dynamic)
     m.animation = animate({
         targets: m.square1,
-        translation: [400, -50],
-        scale: 2
+        translateX: 400,
+        duration: 4
     })
     m.animation.control = "start"
 end sub
