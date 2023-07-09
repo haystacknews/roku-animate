@@ -14,14 +14,14 @@ function animate(params as object) as object
         if (nodeTarget.id = invalid or nodeTarget.id = "")
             nodeTarget.id = `__animate_${rnd(42069)}` ' nice
         end if
-        interpolators = animateTarget(nodeTarget, params)
+        interpolators = getTargetInterpolators(nodeTarget, params)
 
         if (nodeTargetsCount > 1)
             animation = CreateObject("roSGNode", "Animation")
-            animation.appendChildren(interpolators)
+            animation.appendChildren(getInterpolatorNodes(interpolators))
             finalAnimation.appendChild(animation)
         else
-            finalAnimation.appendChildren(interpolators)
+            finalAnimation.appendChildren(getInterpolatorNodes(interpolators))
         end if
     end for
 
@@ -36,14 +36,28 @@ function animate(params as object) as object
     return finalAnimation
 end function
 
-function animateTarget(nodeTarget as object, params as object) as object
+function getInterpolatorNodes(interpolators as object) as object
+    nodes = []
+    for each interpolator in interpolators
+        name = interpolator.name
+        interpolator.delete("name")
+        node = CreateObject("roSGNode", name)
+        node.update(interpolator)
+        nodes.push(node)
+    end for
+
+    return nodes
+end function
+
+
+function getTargetInterpolators(nodeTarget as object, params as object) as object
     interpolators = []
 
     for each item in params.items()
         ' Thanks Roku for not letting us split if statements
         ' in multiple lines. This is very readable! :)
         if (is.valid(item.value) and (is.special.prop(item.key) or nodeTarget.hasField(item.key)))
-            interpolator = animateTargetProperty(nodeTarget, item.key, item.value)
+            interpolator = getPropertyInterpolator(nodeTarget, item.key, item.value)
             if (interpolator <> invalid)
                 interpolators.push(interpolator)
             end if
@@ -52,7 +66,7 @@ function animateTarget(nodeTarget as object, params as object) as object
     return interpolators
 end function
 
-function animateTargetProperty(nodeTarget as object, property as string, value as dynamic) as dynamic
+function getPropertyInterpolator(nodeTarget as object, property as string, value as dynamic) as dynamic
     if (property = "translation" and is.arr2d(value))
         value = [
             nodeTarget.translation[0] + value[0],
@@ -86,18 +100,18 @@ function animateTargetProperty(nodeTarget as object, property as string, value a
 
     currentValue = nodeTarget[property]
 
-    interpolator = invalid
+    interpolator = {}
     if (property = "color")
-        interpolator = CreateObject("roSGNode", "ColorFieldInterpolator")
+        interpolator.name = "ColorFieldInterpolator"
     else if (is.arr2d(value))
-        interpolator = CreateObject("roSGNode", "Vector2DFieldInterpolator")
+        interpolator.name = "Vector2DFieldInterpolator"
     else if (is.number(value))
-        interpolator = CreateObject("roSGNode", "FloatFieldInterpolator")
+        interpolator.name = "FloatFieldInterpolator"
     else
         return invalid
     end if
 
-    interpolator.update({
+    interpolator.append({
         fieldToInterp: `${nodeTarget.id}.${property}`,
         key: [0, 1],
         keyValue: [currentValue, value]
@@ -125,7 +139,7 @@ function getNodeTargets(targets as dynamic) as object
         for each target in targets
             nodeTargets.append(getNodeTargets(target))
         end for
-    else if (is.node(targets))
+    else if (is._node(targets))
         ' For nodes we consider them directly
         nodeTargets.push(targets)
     end if
@@ -158,7 +172,7 @@ namespace is
         return is.float(x) or is.integer(x)
     end function
 
-    function node(x as dynamic) as boolean
+    function _node(x as dynamic) as boolean
         return is.valid(x) and getInterface(x, "ifSGNodeField") <> invalid
     end function
 
