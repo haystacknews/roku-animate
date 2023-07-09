@@ -1,14 +1,6 @@
 function animate(params as object) as object
-    animations = _animate(params)
-
-    if (animations.count() = 1)
-        return animateUtils.createNodeFromAA(animations[0])
-    end if
-
-    return animateUtils.createNodeFromAA({
-        subtype: "ParallelAnimation",
-        children: animations
-    })
+    animation = _animate(params)
+    return animateUtils.createNodeFromAA(animation)
 end function
 
 function _animate(params as object) as object
@@ -39,14 +31,23 @@ function _animate(params as object) as object
         end if
 
         animation = {
-            subtype: "Animation",
+            subtype: animateUtils.NodeNames.Animation,
             children: getTargetInterpolators(nodeTarget, params, interpolatorParams)
         }
         animation.append(animationParams)
-        animations.push(animation)
+        animations.push(parseJson(formatJson(animation)))
     end for
 
-    return animations
+    if (animations.count() = 1)
+        return animations[0]
+    end if
+
+    multipleAnimations = {
+        subtype: animateUtils.NodeNames.ParallelAnimation,
+        children: animations
+    }
+
+    return multipleAnimations
 end function
 
 function getTargetInterpolators(nodeTarget as object, params as object, globalInterpolatorParams as object) as object
@@ -60,7 +61,7 @@ function getTargetInterpolators(nodeTarget as object, params as object, globalIn
             if (interpolator <> invalid)
                 finalInterpolator = globalInterpolatorParams
                 finalInterpolator.append(interpolator)
-                interpolators.push(finalInterpolator)
+                interpolators.push(parseJson(formatJson(finalInterpolator)))
             end if
         end if
     end for
@@ -103,11 +104,11 @@ function getPropertyInterpolator(nodeTarget as object, property as string, value
 
     interpolator = {}
     if (property = "color")
-        interpolator.subtype = "ColorFieldInterpolator"
+        interpolator.subtype = animateUtils.NodeNames.ColorFieldInterpolator
     else if (is.arr2d(value))
-        interpolator.subtype = "Vector2DFieldInterpolator"
+        interpolator.subtype = animateUtils.NodeNames.Vector2DFieldInterpolator
     else if (is.number(value))
-        interpolator.subtype = "FloatFieldInterpolator"
+        interpolator.subtype = animateUtils.NodeNames.FloatFieldInterpolator
     else
         return invalid
     end if
@@ -251,4 +252,12 @@ namespace animateUtils
     function extractInterpolatorParams(params as object) as object
         return animateUtils.extractParams(params, animateUtils.getInterpolatorParams())
     end function
+
+    enum NodeNames
+        Animation = "Animation"
+        ParallelAnimation = "ParallelAnimation"
+        ColorFieldInterpolator = "ColorFieldInterpolator"
+        Vector2DFieldInterpolator = "Vector2DFieldInterpolator"
+        FloatFieldInterpolator = "FloatFieldInterpolator"
+    end enum
 end namespace
