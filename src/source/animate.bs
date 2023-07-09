@@ -22,7 +22,16 @@ function _animate(params as object) as object
         params.delete(interpolatorKey)
     end for
 
-    nodeTargets = getNodeTargets(params.targets)
+    targets = []
+    if (params.target <> invalid)
+        targets = params.target
+    end if
+
+    if (params.targets <> invalid)
+        targets = params.targets
+    end if
+
+    nodeTargets = getNodeTargets(targets)
     params.delete("targets")
 
     for each nodeTarget in nodeTargets
@@ -38,16 +47,17 @@ function _animate(params as object) as object
         animations.push(parseJson(formatJson(animation)))
     end for
 
-    if (animations.count() = 1)
+    if (animations.count() > 1)
+        multipleAnimations = {
+            subtype: animateUtils.NodeNames.ParallelAnimation,
+            children: animations
+        }
+        return multipleAnimations
+    else if (animations.count() = 1)
         return animations[0]
     end if
 
-    multipleAnimations = {
-        subtype: animateUtils.NodeNames.ParallelAnimation,
-        children: animations
-    }
-
-    return multipleAnimations
+    return animations
 end function
 
 function getTargetInterpolators(nodeTarget as object, params as object, globalInterpolatorParams as object) as object

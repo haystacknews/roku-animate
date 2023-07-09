@@ -62,6 +62,23 @@ class TestSuite extends rooibos.BaseTestSuite
 
     @describe("generates animation objects")
 
+    @it("can use `targets` or `target` as key")
+    function _()
+        result = _animate({
+            targets: "r1 r2",
+            x: 20
+        })
+        m.assertEqual(result.subtype, animateUtils.NodeNames.ParallelAnimation)
+        m.assertArrayCount(result.children, 2)
+
+        result = _animate({
+            target: "r1 r2",
+            x: 20
+        })
+        m.assertEqual(result.subtype, animateUtils.NodeNames.ParallelAnimation)
+        m.assertArrayCount(result.children, 2)
+    end function
+
     @it("assigns ids to nodes without")
     function _()
         r = m.canvas.createChild("Rectangle")
@@ -145,6 +162,74 @@ class TestSuite extends rooibos.BaseTestSuite
         m.assertEqual(result.children[0].subtype, animateUtils.NodeNames.ColorFieldInterpolator)
         m.assertEqual(result.children[1].subtype, animateUtils.NodeNames.FloatFieldInterpolator)
         m.assertEqual(result.children[2].subtype, animateUtils.NodeNames.Vector2DFieldInterpolator)
+    end function
+
+    @describe("special interpolator keys")
+
+    @it("x: moves element from current x to value")
+    function _()
+        m.r1.translation = [44, 33]
+        result = _animate({
+            target: m.r1,
+            x: 20
+        })
+
+        m.assertEqual(result.children[0].keyValue, [[44, 33], [20, 33]])
+    end function
+
+    @it("y: moves element from current y to value")
+    function _()
+        m.r1.translation = [90, 24]
+        result = _animate({
+            target: m.r1,
+            y: 87
+        })
+
+        m.assertEqual(result.children[0].keyValue, [[90, 24], [90, 87]])
+    end function
+
+    @it("translateX: moves element from current x to (current x + value)")
+    function _()
+        m.r1.translation = [44, 33]
+        result = _animate({
+            target: m.r1,
+            translateX: 20
+        })
+
+        m.assertEqual(result.children[0].keyValue, [[44, 33], [64, 33]])
+    end function
+
+    @it("translateY: moves element from current y to (current y + value)")
+    function _()
+        m.r1.translation = [90, 24]
+        result = _animate({
+            target: m.r1,
+            translateY: 87
+        })
+
+        m.assertEqual(result.children[0].keyValue, [[90, 24], [90, 111]])
+    end function
+
+    @describe("special interpolator values")
+
+    @it("rotation in degrees is transformed to radians")
+    function _()
+        result = _animate({
+            target: m.r1,
+            rotation: "90deg"
+        })
+
+        m.assertEqual(result.children[0].keyValue, [0, 1.5708])
+    end function
+
+    @it("single value for scale is expanded to array")
+    function _()
+        result = _animate({
+            target: m.r1,
+            scale: 2
+        })
+
+        m.assertEqual(result.children[0].keyValue, [[1, 1], [2, 2]])
     end function
 end class
 end namespace
