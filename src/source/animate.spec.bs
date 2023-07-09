@@ -1,0 +1,70 @@
+import "animate.bs"
+
+namespace tests
+@suite
+class TestSuite extends rooibos.BaseTestSuite
+    @describe("identifies targets")
+
+    @beforeEach
+    function _()
+        if (m.canvas = invalid)
+            m.canvas = m.top.createChild("Group")
+            m.canvas.id = "canvas"
+        end if
+        
+        m.r1 = m.canvas.createChild("Rectangle")
+        m.r1.id = "r1"
+
+        m.r2 = m.canvas.createChild("Rectangle")
+        m.r2.id = "r2"
+    end function
+
+    protected override function afterEach()
+        m.resetCanvas()
+    end function
+
+    private function resetCanvas()
+        if (m.canvas <> invalid)
+            m.canvas.removeChildrenIndex(m.canvas.getChildCount(), 0)
+        end if
+    end function
+
+    @it("by string id")
+    function _()
+        targets = getNodeTargets("r1 r2")
+        m.assertArrayCount(targets, 2)
+        m.assertSubType(targets[0], "Rectangle")
+    end function
+
+    @it("directly by node")
+    function _()
+        targets = getNodeTargets(m.r1)
+        m.assertArrayCount(targets, 1)
+        m.assertSubType(targets[0], "Rectangle")
+    end function
+
+    @it("by list of strings")
+    function _()
+        targets = getNodeTargets(["r1", "r2"])
+        m.assertArrayCount(targets, 2)
+    end function
+
+    @it("by list of nodes")
+    function _()
+        targets = getNodeTargets([m.r1, m.r2])
+        m.assertArrayCount(targets, 2)
+    end function
+
+    @it("by mixed list")
+    function _()
+        targets = getNodeTargets(["r1", m.r2])
+        m.assertArrayCount(targets, 2)
+    end function
+
+    @it("does not generate duplicates")
+    function _()
+        targets = getNodeTargets("r1 r1")
+        m.assertArrayCount(targets, 1)
+    end function
+end class
+end namespace
