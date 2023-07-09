@@ -19,6 +19,7 @@ function animate(params as object) as object
         if (nodeTargetsCount > 1)
             animation = CreateObject("roSGNode", "Animation")
             animation.appendChildren(interpolators)
+            finalAnimation.appendChild(animation)
         else
             finalAnimation.appendChildren(interpolators)
         end if
@@ -68,6 +69,11 @@ function animateTargetProperty(nodeTarget as object, property as string, value a
             currentY = nodeTarget.translation[1]
             value = [nodeTarget.translation[0], currentY + value]
         end if
+    end if
+
+    if (property = "rotation" and is.str(value) and value.endsWith("deg"))
+        degrees = value.tokenize("deg")[0].toFloat()
+        value = degrees * 0.01745329
     end if
 
     currentValue = nodeTarget[property]
