@@ -12,7 +12,7 @@ function animate(params as object) as object
 
     for each nodeTarget in nodeTargets
         if (nodeTarget.id = invalid or nodeTarget.id = "")
-            nodeTarget.id = "__animate"
+            nodeTarget.id = `__animate_${rnd(42069)}` ' nice
         end if
         interpolators = animateTarget(nodeTarget, params)
 
@@ -42,7 +42,7 @@ function animateTarget(nodeTarget as object, params as object) as object
     for each item in params.items()
         ' Thanks Roku for not letting us split if statements
         ' in multiple lines. This is very readable! :)
-        if (is.valid(item.value) and (is.specialAnimateProperty(item.key) or nodeTarget.hasField(item.key)))
+        if (is.valid(item.value) and (is.special.prop(item.key) or nodeTarget.hasField(item.key)))
             interpolator = animateTargetProperty(nodeTarget, item.key, item.value)
             if (interpolator <> invalid)
                 interpolators.push(interpolator)
@@ -53,19 +53,23 @@ function animateTarget(nodeTarget as object, params as object) as object
 end function
 
 function animateTargetProperty(nodeTarget as object, property as string, value as dynamic) as dynamic
-    if (is.specialAnimateProperty(property))
+    if (property = "translation" and is.arr2d(value))
+        value = [
+            nodeTarget.translation[0] + value[0],
+            nodeTarget.translation[1] + value[1]
+        ]
+    end if
+
+    if (is.special.translation(property))
+        property = "translation"
         if (compareFieldStrings(property, "x"))
-            property = "translation"
             value = [value, nodeTarget.translation[1]]
         else if (compareFieldStrings(property, "y"))
-            property = "translation"
             value = [nodeTarget.translation[0], value]
         else if (compareFieldStrings(property, "translateX"))
-            property = "translation"
             currentX = nodeTarget.translation[0]
             value = [currentX + value, nodeTarget.translation[1]]
         else if (compareFieldStrings(property, "translateY"))
-            property = "translation"
             currentY = nodeTarget.translation[1]
             value = [nodeTarget.translation[0], currentY + value]
         end if
@@ -76,12 +80,16 @@ function animateTargetProperty(nodeTarget as object, property as string, value a
         value = degrees * 0.01745329
     end if
 
+    if (property = "scale" and is.number(value))
+        value = [value, value]
+    end if
+
     currentValue = nodeTarget[property]
 
     interpolator = invalid
     if (property = "color")
         interpolator = CreateObject("roSGNode", "ColorFieldInterpolator")
-    else if (is.arr(value))
+    else if (is.arr2d(value))
         interpolator = CreateObject("roSGNode", "Vector2DFieldInterpolator")
     else if (is.number(value))
         interpolator = CreateObject("roSGNode", "FloatFieldInterpolator")
@@ -154,20 +162,30 @@ namespace is
         return is.valid(x) and getInterface(x, "ifSGNodeField") <> invalid
     end function
 
-    function specialAnimateProperty(x as dynamic) as boolean
-        if (not is.str(x))
-            return false
-        end if
-
-        specialProperties = ["x", "y", "translateX", "translateY"]
-        for each specialProperty in specialProperties
-            if (compareFieldStrings(specialProperty, x))
-                return true
-            end if
-        end for
-
-        return false
+    function arr2d(x as dynamic) as boolean
+        return is.valid(x) and is.arr(x) and x.count() = 2 and is.number(x[0]) and is.number(x[1])
     end function
+
+    namespace special
+        function prop(x as dynamic) as boolean
+            return is.special.translation(x)
+        end function
+
+        function translation(x as dynamic) as boolean
+            if (not is.str(x))
+                return false
+            end if
+    
+            specialProperties = ["x", "y", "translateX", "translateY"]
+            for each specialProperty in specialProperties
+                if (compareFieldStrings(specialProperty, x))
+                    return true
+                end if
+            end for
+    
+            return false
+        end function
+    end namespace
 end namespace
 
 function compareFieldStrings(x as string, y as string) as boolean
