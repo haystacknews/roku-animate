@@ -1,31 +1,42 @@
 import "pkg:/source/animate.bs"
 
 sub init()
-    m.square = CreateObject("roSGNode", "Rectangle")
-    m.square.update({
-        width: 100,
-        height: 100,
-        color: "#FF4B4B",
+    createSquareAndShadow({
+        id: "square1",
         translation: [200, 200]
     })
-    squareShadow = cloneNode(m.square)
-    squareShadow.opacity = 0.5
-    m.top.appendChild(squareShadow)
-    m.top.appendChild(m.square)
+
+    createSquareAndShadow({
+        id: "square2",
+        translation: [200, 500]
+    })
 end sub
 
 sub start(_ = invalid as dynamic)
     m.animation = animate({
-        targets: m.square,
-        translateX: 400,
-        color: "#ffffff"
+        targets: "square1 square2",
+        translateX: 400
     })
-    m.animation.duration = 4
     m.animation.control = "start"
 end sub
 
-function cloneNode(oldNode as Object) as Object
-    newNode = createObject("roSGNode",oldNode.subtype()) 'subtyped node should automatically have all the fields of the original node
-    newNode.setFields(oldNode.getFields())
-    return newNode
+function createSquareAndShadow(_squareFields as object) as object
+    squareFields = {
+        width: 100,
+        height: 100,
+        color: "#FF4B4B"
+    }
+
+    squareFields.append(_squareFields)
+
+    shadow = m.top.createChild("Rectangle")
+    shadow.update(squareFields)
+    shadow.update({
+        opacity: 0.5,
+        id: invalid
+    })
+
+    square = m.top.createChild("Rectangle")
+    square.update(squareFields)
+    return square
 end function
