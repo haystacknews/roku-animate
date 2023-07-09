@@ -1,4 +1,17 @@
 function animate(params as object) as object
+    animations = _animate(params)
+    if (animations.count() = 1)
+        return animateUtils.createNodeFromAA(animations[0])
+    end if
+
+    return animateUtils.createNodeFromAA({
+        subtype: "ParallelAnimation",
+        children: animations
+    })
+end function
+
+function _animate(params as object) as object
+    animations = []
     animationParams = animateUtils.extractAnimationParams(params)
     if (animationParams.duration = invalid)
         animationParams.duration = 1
@@ -9,47 +22,22 @@ function animate(params as object) as object
     end for
 
     nodeTargets = getNodeTargets(params.targets)
-    nodeTargetsCount = nodeTargets.count()
     params.delete("targets")
-
-    finalAnimation = invalid
-    if (nodeTargetsCount > 1)
-        finalAnimation = CreateObject("roSGNode", "ParallelAnimation")
-    else
-        finalAnimation = CreateObject("roSGNode", "Animation")
-    end if
 
     for each nodeTarget in nodeTargets
         if (nodeTarget.id = invalid or nodeTarget.id = "")
             nodeTarget.id = `__animate_${rnd(42069)}` ' nice
         end if
-        interpolators = getTargetInterpolators(nodeTarget, params)
 
-        if (nodeTargetsCount > 1)
-            animation = CreateObject("roSGNode", "Animation")
-            animation.appendChildren(getInterpolatorNodes(interpolators))
-            animation.update(animationParams)
-            finalAnimation.appendChild(animation)
-        else
-            finalAnimation.appendChildren(getInterpolatorNodes(interpolators))
-            finalAnimation.update(animationParams)
-        end if
+        animation = {
+            subtype: "Animation",
+            children: getTargetInterpolators(nodeTarget, params)
+        }
+        animation.append(animationParams)
+        animations.push(animation)
     end for
 
-    return finalAnimation
-end function
-
-function getInterpolatorNodes(interpolators as object) as object
-    nodes = []
-    for each interpolator in interpolators
-        name = interpolator.name
-        interpolator.delete("name")
-        node = CreateObject("roSGNode", name)
-        node.update(interpolator)
-        nodes.push(node)
-    end for
-
-    return nodes
+    return animations
 end function
 
 function getTargetInterpolators(nodeTarget as object, params as object) as object
@@ -104,11 +92,11 @@ function getPropertyInterpolator(nodeTarget as object, property as string, value
 
     interpolator = {}
     if (property = "color")
-        interpolator.name = "ColorFieldInterpolator"
+        interpolator.subtype = "ColorFieldInterpolator"
     else if (is.arr2d(value))
-        interpolator.name = "Vector2DFieldInterpolator"
+        interpolator.subtype = "Vector2DFieldInterpolator"
     else if (is.number(value))
-        interpolator.name = "FloatFieldInterpolator"
+        interpolator.subtype = "FloatFieldInterpolator"
     else
         return invalid
     end if
@@ -205,6 +193,13 @@ namespace is
 end namespace
 
 namespace animateUtils
+    function createNodeFromAA(aa as object) as object
+        node = CreateObject("roSGNode", aa.subtype)
+        aa.delete("subtype")
+        node.update(aa)
+        return node
+    end function
+
     function compareFieldStrings(x as string, y as string) as boolean
         return lcase(x) = lcase(y)
     end function
