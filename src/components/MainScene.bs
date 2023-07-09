@@ -1,21 +1,16 @@
 import "pkg:/source/animate.bs"
 
 sub init()
-    createSquareAndShadow({
-        id: "square1",
+    m.square1 = createSquareAndShadow({
         translation: [200, 200]
-    })
-
-    createSquareAndShadow({
-        id: "square2",
-        translation: [200, 500]
     })
 end sub
 
 sub start(_ = invalid as dynamic)
     m.animation = animate({
-        targets: "square1 square2",
-        translateX: 400
+        targets: m.square1,
+        translation: [400, -50],
+        scale: 2
     })
     m.animation.control = "start"
 end sub
