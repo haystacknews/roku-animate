@@ -15,9 +15,6 @@ function _animate(params as object, recursive = true as boolean) as object
     end for
 
     interpolatorParams = animateUtils.extractInterpolatorParams(params)
-    if (interpolatorParams.key = invalid)
-        interpolatorParams.key = [0, 1]
-    end if
     for each interpolatorKey in interpolatorParams.keys()
         params.delete(interpolatorKey)
     end for
@@ -94,6 +91,11 @@ end function
 
 function getTargetInterpolators(nodeTarget as object, params as object, globalInterpolatorParams as object) as object
     interpolators = []
+    direction = params.direction
+    if (direction = invalid)
+        direction = "normal"
+    end if
+    params.delete("direction")
 
     for each item in params.items()
         ' Thanks Roku for not letting us split if statements
@@ -103,6 +105,25 @@ function getTargetInterpolators(nodeTarget as object, params as object, globalIn
             if (interpolator <> invalid)
                 finalInterpolator = globalInterpolatorParams
                 finalInterpolator.append(interpolator)
+
+                if (direction = "reverse")
+                    finalInterpolator.keyValue.reverse()
+                else if (direction = "alternate")
+                    keyValueCopy = parseJson(formatJson(finalInterpolator.keyValue))
+                    keyValueCopy.reverse()
+                    finalInterpolator.keyValue.pop()
+                    finalInterpolator.keyValue.append(keyValueCopy)
+                end if
+
+                if (finalInterpolator.key = invalid)
+                    keyValueCount = finalInterpolator.keyValue.count()
+                    finalInterpolator.key = []
+                    _step = 1 / (keyValueCount - 1)
+                    for i = 0 to keyValueCount - 1
+                        finalInterpolator.key.push(i * _step)
+                    end for
+                end if
+
                 interpolators.push(parseJson(formatJson(finalInterpolator)))
             end if
         end if

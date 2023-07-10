@@ -301,5 +301,43 @@ class TestSuite extends rooibos.BaseTestSuite
         m.assertEqual(colorAnim.duration, 1)
         m.assertEqual(colorAnim.delay, 0.25)
     end function
+
+    @describe("direction and keys")
+
+    @it("normal")
+    function _()
+        result = _animate({
+            target: m.r1,
+            translateX: 250,
+            direction: "normal"
+        })
+
+        m.assertEqual(result.children[0].keyValue, [[0, 0], [250, 0]])
+        m.assertEqual(result.children[0].key, [0, 1])
+    end function
+
+    @it("reverse")
+    function _()
+        result = _animate({
+            target: m.r1,
+            translateX: 250,
+            direction: "reverse"
+        })
+
+        m.assertEqual(result.children[0].keyValue, [[250, 0], [0, 0]])
+        m.assertEqual(result.children[0].key, [0, 1])
+    end function
+
+    @it("alternate")
+    function _()
+        result = _animate({
+            target: m.r1,
+            translateX: 250,
+            direction: "alternate"
+        })
+
+        m.assertEqual(result.children[0].keyValue, [[0, 0], [250, 0], [0, 0]])
+        m.assertEqual(result.children[0].key, [0, 0.5, 1])
+    end function
 end class
 end namespace
