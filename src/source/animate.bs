@@ -63,14 +63,22 @@ function _animate(params as object, recursive = true as boolean) as object
         end for
     end if
 
-    for each nodeTarget in nodeTargets
+    targetsLength = nodeTargets.count()
+    for i = 0 to targetsLength - 1
+        nodeTarget = nodeTargets[i]
         if (nodeTarget.id = invalid or nodeTarget.id = "")
             nodeTarget.id = `__animate_${rnd(42069)}` ' nice
         end if
 
+        targetInfo = {
+            nodeTarget: nodeTarget,
+            index: i,
+            targetsLength: targetsLength
+        }
+
         animation = {
             subtype: animateUtils.NodeNames.Animation,
-            children: getTargetInterpolators(nodeTarget, params, interpolatorParams)
+            children: getTargetInterpolators(targetInfo, params, interpolatorParams)
         }
         animation.append(animationParams)
         if (animation.children.count() > 0)
@@ -101,7 +109,9 @@ function _animate(params as object, recursive = true as boolean) as object
     return animations
 end function
 
-function getTargetInterpolators(nodeTarget as object, params as object, globalInterpolatorParams as object) as object
+function getTargetInterpolators(targetInfo as object, params as object, globalInterpolatorParams as object) as object
+    nodeTarget = targetInfo.nodeTarget
+
     interpolators = []
     direction = params.direction
     if (direction = invalid)
@@ -113,7 +123,13 @@ function getTargetInterpolators(nodeTarget as object, params as object, globalIn
         ' Thanks Roku for not letting us split if statements
         ' in multiple lines. This is very readable! :)
         if (is.valid(item.value) and (is.special.prop(item.key) or nodeTarget.hasField(item.key)))
-            interpolator = getPropertyInterpolator(nodeTarget, item.key, item.value)
+            value = item.value
+
+            if (is.func(item.value))
+                value = value(nodeTarget, targetInfo.index, targetInfo.targetsLength)
+            end if
+
+            interpolator = getPropertyInterpolator(nodeTarget, item.key, value)
             if (interpolator <> invalid)
                 finalInterpolator = globalInterpolatorParams
                 finalInterpolator.append(interpolator)
@@ -259,6 +275,11 @@ namespace is
     function _aa(x as dynamic) as boolean
         return is.valid(x) and getInterface(x, "ifAssociativeArray") <> invalid
     end function
+
+    function func(x as dynamic) as boolean
+        return is.valid(x) and getInterface(x, "ifFunction") <> invalid
+    end function
+
     namespace special
         function prop(x as dynamic) as boolean
             return is.special.translation(x)

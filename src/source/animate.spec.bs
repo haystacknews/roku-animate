@@ -380,5 +380,25 @@ class TestSuite extends rooibos.BaseTestSuite
         m.assertEqual(result.children[0].keyValue, [[0, 0], [250, 0], [0, 0]])
         m.assertEqual(result.children[0].key, [0, 0.5, 1])
     end function
+
+    @describe("function based parameters")
+    @it("target parameters")
+    function _()
+        result = _animate({
+            target: "r1 r2"
+            translateX: function (t, i, l)
+                return (i + 1) * 100
+            end function
+        })
+
+        m.assertEqual(result.children[0].children[0].keyValue, [[0, 0], [100, 0]])
+        m.assertEqual(result.children[1].children[0].keyValue, [[0, 0], [200, 0]])
+    end function
+
+    @it("animation and interpolator parameters")
+    function _()
+        ' TODO
+        m.assertTrue(false)
+    end function
 end class
 end namespace
