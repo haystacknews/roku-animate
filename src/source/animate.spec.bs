@@ -302,6 +302,47 @@ class TestSuite extends rooibos.BaseTestSuite
         m.assertEqual(colorAnim.delay, 0.25)
     end function
 
+    @describe("autoplay")
+
+    @it("default (true)")
+    function _()
+        result = _animate({
+            target: m.r1,
+            x: 20
+        })
+        m.assertEqual(result.control, "start")
+    end function
+
+    @it("false")
+    function _()
+        result = _animate({
+            target: m.r1,
+            autoplay: false,
+            x: 20
+        })
+        m.assertEqual(result.control, "none")
+    end function
+
+    @it("only in recursive mode")
+    function _()
+        result = _animate({
+            target: m.r1,
+            autoplay: true,
+            x: {
+                value: 20,
+                delay: 0.8
+            },
+            scale: {
+                value: 2,
+                delay: 1.5
+            }
+        })
+
+        m.assertEqual(result.control, "start")
+        m.assertInvalid(result.children[0].control)
+        m.assertInvalid(result.children[1].control)
+    end function
+
     @describe("direction and keys")
 
     @it("normal")

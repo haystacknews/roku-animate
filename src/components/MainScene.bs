@@ -28,8 +28,6 @@ sub start(_ = invalid as dynamic)
         color: "#FAFA33",
         delay: 0.25
     })
-
-    m.animation.control = "start"
 end sub
 
 function createSquareAndShadow(_squareFields as object) as object

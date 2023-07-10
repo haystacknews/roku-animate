@@ -30,6 +30,12 @@ function _animate(params as object, recursive = true as boolean) as object
         params.delete("targets")
     end if
 
+    autoplay = params.autoplay
+    if (autoplay = invalid)
+        autoplay = true
+    end if
+    params.delete("autoplay")
+
     nodeTargets = getNodeTargets(targets)
 
     subAnimations = []
@@ -81,8 +87,14 @@ function _animate(params as object, recursive = true as boolean) as object
             subtype: animateUtils.NodeNames.ParallelAnimation,
             children: animations
         }
+        if (recursive)
+            multipleAnimations.control = autoplay ? "start" : "none"
+        end if
         return multipleAnimations
     else if (animations.count() = 1)
+        if (recursive)
+            animations[0].control = autoplay ? "start" : "none"
+        end if
         return animations[0]
     end if
 
