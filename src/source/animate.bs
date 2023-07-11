@@ -53,7 +53,7 @@ function _animate(params as object, recursive = true as boolean) as object
                 item.value.delete("value")
                 subParams.append(item.value)
                 subAnimation = _animate(subParams, false)
-                subAnimations.push(parseJson(formatJson(subAnimation)))
+                subAnimations.push(animateUtils.shallowCopy(subAnimation))
                 subKeys.push(item.key)
             end if
         end for
@@ -76,13 +76,18 @@ function _animate(params as object, recursive = true as boolean) as object
             targetsLength: targetsLength
         }
 
+        finalAnimationParams = animateUtils.getFunctionValueParams(animationParams, targetInfo)
+        finalInterpolatorParams = animateUtils.getFunctionValueParams(interpolatorParams, targetInfo)
+        finalParams = animateUtils.getFunctionValueParams(params, targetInfo)
+
         animation = {
             subtype: animateUtils.NodeNames.Animation,
-            children: getTargetInterpolators(targetInfo, params, interpolatorParams)
+            children: getTargetInterpolators(nodeTarget, finalParams, finalInterpolatorParams)
         }
-        animation.append(animationParams)
+
+        animation.append(finalAnimationParams)
         if (animation.children.count() > 0)
-            animations.push(parseJson(formatJson(animation)))
+            animations.push(animateUtils.shallowCopy(animation))
         end if
     end for
 
@@ -109,9 +114,7 @@ function _animate(params as object, recursive = true as boolean) as object
     return animations
 end function
 
-function getTargetInterpolators(targetInfo as object, params as object, globalInterpolatorParams as object) as object
-    nodeTarget = targetInfo.nodeTarget
-
+function getTargetInterpolators(nodeTarget as object, params as object, globalInterpolatorParams as object) as object
     interpolators = []
     direction = params.direction
     if (direction = invalid)
@@ -123,13 +126,7 @@ function getTargetInterpolators(targetInfo as object, params as object, globalIn
         ' Thanks Roku for not letting us split if statements
         ' in multiple lines. This is very readable! :)
         if (is.valid(item.value) and (is.special.prop(item.key) or nodeTarget.hasField(item.key)))
-            value = item.value
-
-            if (is.func(item.value))
-                value = value(nodeTarget, targetInfo.index, targetInfo.targetsLength)
-            end if
-
-            interpolator = getPropertyInterpolator(nodeTarget, item.key, value)
+            interpolator = getPropertyInterpolator(nodeTarget, item.key, item.value)
             if (interpolator <> invalid)
                 finalInterpolator = globalInterpolatorParams
                 finalInterpolator.append(interpolator)
@@ -137,7 +134,7 @@ function getTargetInterpolators(targetInfo as object, params as object, globalIn
                 if (direction = "reverse")
                     finalInterpolator.keyValue.reverse()
                 else if (direction = "alternate")
-                    keyValueCopy = parseJson(formatJson(finalInterpolator.keyValue))
+                    keyValueCopy = animateUtils.shallowCopy(finalInterpolator.keyValue)
                     keyValueCopy.reverse()
                     finalInterpolator.keyValue.pop()
                     finalInterpolator.keyValue.append(keyValueCopy)
@@ -152,7 +149,7 @@ function getTargetInterpolators(targetInfo as object, params as object, globalIn
                     end for
                 end if
 
-                interpolators.push(parseJson(formatJson(finalInterpolator)))
+                interpolators.push(animateUtils.shallowCopy(finalInterpolator))
             end if
         end if
     end for
@@ -162,12 +159,13 @@ end function
 function getPropertyInterpolator(nodeTarget as object, property as string, value as dynamic) as dynamic
     if (property = "translation" and is.arr2d(value))
         value = [
-            nodeTarget.translation[0] + value[0],
-            nodeTarget.translation[1] + value[1]
+            nodeTarget.translation[0] + cdbl(value[0]),
+            nodeTarget.translation[1] + cdbl(value[1])
         ]
     end if
 
     if (is.special.translation(property))
+        value = cdbl(value)
         if (animateUtils.compareFieldStrings(property, "x"))
             value = [value, nodeTarget.translation[1]]
         else if (animateUtils.compareFieldStrings(property, "y"))
@@ -188,6 +186,7 @@ function getPropertyInterpolator(nodeTarget as object, property as string, value
     end if
 
     if (property = "scale" and is.number(value))
+        value = cdbl(value)
         value = [value, value]
     end if
 
@@ -350,6 +349,25 @@ namespace animateUtils
 
     function extractInterpolatorParams(params as object) as object
         return animateUtils.extractParams(params, animateUtils.getInterpolatorParams())
+    end function
+
+    function shallowCopy(x as object)
+        y = {}
+        if (is.arr(x))
+            y = []
+        end if
+        y.append(x)
+        return y
+    end function
+
+    function getFunctionValueParams(params as object, targetInfo as object)
+        copy = animateUtils.shallowCopy(params)
+        for each item in copy.items()
+            if (is.func(item.value))
+                copy[item.key] = item.value(targetInfo.nodeTarget, targetInfo.index, targetInfo.targetsLength)
+            end if
+        end for
+        return copy
     end function
 
     enum NodeNames
