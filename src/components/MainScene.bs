@@ -21,7 +21,7 @@ sub init()
 end sub
 
 sub start(_ = invalid as dynamic)
-    m.animation = animate({
+    m.animation = animate.create({
         targets: "r0 r1 r2",
         ' bs:disable-next-line
         translation: function(el, i, t)

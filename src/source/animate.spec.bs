@@ -30,33 +30,33 @@ namespace tests
 
         @it("by string id")
         function _()
-            targets = getNodeTargets("r1 r2")
+            targets = _animate.getNodeTargets("r1 r2")
             m.assertArrayCount(targets, 2)
             m.assertSubType(targets[0], "Rectangle")
         end function
 
         @it("directly by node")
         function _()
-            targets = getNodeTargets(m.r1)
+            targets = _animate.getNodeTargets(m.r1)
             m.assertArrayCount(targets, 1)
             m.assertSubType(targets[0], "Rectangle")
         end function
 
         @it("by list of strings")
         function _()
-            targets = getNodeTargets(["r1", "r2"])
+            targets = _animate.getNodeTargets(["r1", "r2"])
             m.assertArrayCount(targets, 2)
         end function
 
         @it("by list of nodes")
         function _()
-            targets = getNodeTargets([m.r1, m.r2])
+            targets = _animate.getNodeTargets([m.r1, m.r2])
             m.assertArrayCount(targets, 2)
         end function
 
         @it("by mixed list")
         function _()
-            targets = getNodeTargets(["r1", m.r2])
+            targets = _animate.getNodeTargets(["r1", m.r2])
             m.assertArrayCount(targets, 2)
         end function
 
@@ -64,38 +64,38 @@ namespace tests
 
         @it("can use `targets` or `target` as key")
         function _()
-            result = _animate({
+            result = _animate.create({
                 targets: "r1 r2",
                 x: 20
             })
-            m.assertEqual(result.subtype, animateUtils.NodeNames.ParallelAnimation)
+            m.assertEqual(result.subtype, _animate.utils.nodes.ParallelAnimation)
             m.assertArrayCount(result.children, 2)
 
-            result = _animate({
+            result = _animate.create({
                 target: "r1 r2",
                 x: 20
             })
-            m.assertEqual(result.subtype, animateUtils.NodeNames.ParallelAnimation)
+            m.assertEqual(result.subtype, _animate.utils.nodes.ParallelAnimation)
             m.assertArrayCount(result.children, 2)
         end function
 
         @it("assigns ids to nodes without")
         function _()
             r = m.canvas.createChild("Rectangle")
-            _animate({ targets: r })
-            m.assertTrue(r.id.startsWith("__animate_"))
+            _animate.create({ targets: r })
+            m.assertTrue(r.id.startsWith("__animate"))
         end function
 
         @it("considers animation and interpolator params")
         function _()
-            result = _animate({
+            result = _animate.create({
                 targets: m.r1,
                 duration: 33,
                 key: [0, 0.2, 0.19, 0.9, 1],
                 x: 20
             })
 
-            m.assertEqual(result.subType, animateUtils.NodeNames.Animation)
+            m.assertEqual(result.subType, _animate.utils.nodes.Animation)
             m.assertEqual(result.duration, 33)
             m.assertArrayCount(result.children, 1)
             m.assertArrayCount(result.children[0].key, 5)
@@ -106,35 +106,35 @@ namespace tests
 
         @it("generates parallel animation for multiple targets")
         function _()
-            result = _animate({
+            result = _animate.create({
                 targets: [m.r1, m.r2],
                 x: 20
             })
 
-            m.assertEqual(result.subtype, animateUtils.NodeNames.ParallelAnimation)
+            m.assertEqual(result.subtype, _animate.utils.nodes.ParallelAnimation)
             m.assertArrayCount(result.children, 2)
 
             r1Animation = result.children[0]
-            m.assertEqual(r1Animation.subtype, animateUtils.NodeNames.Animation)
+            m.assertEqual(r1Animation.subtype, _animate.utils.nodes.Animation)
             m.assertArrayCount(r1Animation.children, 1)
 
             r1Interp = r1Animation.children[0]
 
             m.assertEqual(r1Interp, {
-                subtype: animateUtils.NodeNames.Vector2DFieldInterpolator,
+                subtype: _animate.utils.nodes.Vector2DFieldInterpolator,
                 fieldToInterp: "r1.translation",
                 key: [0.0, 1.0]
                 keyValue: [[0.0, 0.0], [20.0, 0.0]]
             })
 
             r2Animation = result.children[1]
-            m.assertEqual(r2Animation.subtype, animateUtils.NodeNames.Animation)
+            m.assertEqual(r2Animation.subtype, _animate.utils.nodes.Animation)
             m.assertArrayCount(r2Animation.children, 1)
 
             r2Interp = r2Animation.children[0]
 
             m.assertEqual(r2Interp, {
-                subtype: animateUtils.NodeNames.Vector2DFieldInterpolator,
+                subtype: _animate.utils.nodes.Vector2DFieldInterpolator,
                 fieldToInterp: "r2.translation",
                 key: [0.0, 1.0]
                 keyValue: [[0.0, 0.0], [20.0, 0.0]]
@@ -145,7 +145,7 @@ namespace tests
         function _()
             label = m.canvas.createChild("Label")
             label.text = "initial"
-            result = _animate({
+            result = _animate.create({
                 targets: label,
                 ' vector 2d field interp
                 x: 20,
@@ -157,11 +157,11 @@ namespace tests
                 text: "final"
             })
 
-            m.assertEqual(result.subtype, animateUtils.NodeNames.Animation)
+            m.assertEqual(result.subtype, _animate.utils.nodes.Animation)
             m.assertArrayCount(result.children, 3)
-            m.assertEqual(result.children[0].subtype, animateUtils.NodeNames.ColorFieldInterpolator)
-            m.assertEqual(result.children[1].subtype, animateUtils.NodeNames.FloatFieldInterpolator)
-            m.assertEqual(result.children[2].subtype, animateUtils.NodeNames.Vector2DFieldInterpolator)
+            m.assertEqual(result.children[0].subtype, _animate.utils.nodes.ColorFieldInterpolator)
+            m.assertEqual(result.children[1].subtype, _animate.utils.nodes.FloatFieldInterpolator)
+            m.assertEqual(result.children[2].subtype, _animate.utils.nodes.Vector2DFieldInterpolator)
         end function
 
         @describe("special interpolator keys")
@@ -169,7 +169,7 @@ namespace tests
         @it("x: moves element from current x to value")
         function _()
             m.r1.translation = [44, 33]
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 x: 20
             })
@@ -180,7 +180,7 @@ namespace tests
         @it("y: moves element from current y to value")
         function _()
             m.r1.translation = [90, 24]
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 y: 87
             })
@@ -191,7 +191,7 @@ namespace tests
         @it("translateX: moves element from current x to (current x + value)")
         function _()
             m.r1.translation = [44, 33]
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 translateX: 20
             })
@@ -202,7 +202,7 @@ namespace tests
         @it("translateY: moves element from current y to (current y + value)")
         function _()
             m.r1.translation = [90, 24]
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 translateY: 87
             })
@@ -214,7 +214,7 @@ namespace tests
 
         @it("rotation in degrees is transformed to radians")
         function _()
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 rotation: "90deg"
             })
@@ -227,7 +227,7 @@ namespace tests
 
         @it("single value for scale is expanded to array")
         function _()
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 scale: 2
             })
@@ -239,7 +239,7 @@ namespace tests
 
         @it("specific parameters per property")
         function _()
-            result = _animate({
+            result = _animate.create({
                 targets: m.r1,
                 translateX: {
                     value: 450,
@@ -262,7 +262,7 @@ namespace tests
                 delay: 0.25
             })
 
-            m.assertEqual(result.subtype, animateUtils.NodeNames.ParallelAnimation)
+            m.assertEqual(result.subtype, _animate.utils.nodes.ParallelAnimation)
             m.assertArrayCount(result.children, 4)
 
             ' Roku automatically transforms AAs to have
@@ -277,16 +277,16 @@ namespace tests
 
             ' confirm that interpolators have correct values
 
-            m.assertEqual(colorAnim.children[0].subtype, animateUtils.NodeNames.ColorFieldInterpolator)
+            m.assertEqual(colorAnim.children[0].subtype, _animate.utils.nodes.ColorFieldInterpolator)
             m.assertEqual(colorAnim.children[0].fieldToInterp, "r1.color")
 
-            m.assertEqual(rotationAnim.children[0].subtype, animateUtils.NodeNames.FloatFieldInterpolator)
+            m.assertEqual(rotationAnim.children[0].subtype, _animate.utils.nodes.FloatFieldInterpolator)
             m.assertEqual(rotationAnim.children[0].fieldToInterp, "r1.rotation")
 
-            m.assertEqual(scaleAnim.children[0].subtype, animateUtils.NodeNames.Vector2DFieldInterpolator)
+            m.assertEqual(scaleAnim.children[0].subtype, _animate.utils.nodes.Vector2DFieldInterpolator)
             m.assertEqual(scaleAnim.children[0].fieldToInterp, "r1.scale")
 
-            m.assertEqual(translationAnim.children[0].subtype, animateUtils.NodeNames.Vector2DFieldInterpolator)
+            m.assertEqual(translationAnim.children[0].subtype, _animate.utils.nodes.Vector2DFieldInterpolator)
             m.assertEqual(translationAnim.children[0].fieldToInterp, "r1.translation")
 
             ' confirm that animations are inheriting root
@@ -309,7 +309,7 @@ namespace tests
 
         @it("default (true)")
         function _()
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 x: 20
             })
@@ -318,7 +318,7 @@ namespace tests
 
         @it("false")
         function _()
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 autoplay: false,
                 x: 20
@@ -328,7 +328,7 @@ namespace tests
 
         @it("only in recursive mode")
         function _()
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 autoplay: true,
                 x: {
@@ -350,7 +350,7 @@ namespace tests
 
         @it("normal")
         function _()
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 translateX: 250,
                 direction: "normal"
@@ -362,7 +362,7 @@ namespace tests
 
         @it("reverse")
         function _()
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 translateX: 250,
                 direction: "reverse"
@@ -374,7 +374,7 @@ namespace tests
 
         @it("alternate: creates a sequential animation with the 2nd one reversed")
         function _()
-            result = _animate({
+            result = _animate.create({
                 target: m.r1,
                 translateX: 250,
                 direction: "alternate",
@@ -383,7 +383,7 @@ namespace tests
                 repeat: true
             })
 
-            m.assertEqual(result.subtype, animateUtils.NodeNames.SequentialAnimation)
+            m.assertEqual(result.subtype, _animate.utils.nodes.SequentialAnimation)
             m.assertArrayCount(result.children, 2)
             m.assertTrue(result.repeat)
             m.assertInvalid(result.duration)
@@ -406,7 +406,7 @@ namespace tests
 
         @it("target parameters")
         function _()
-            result = _animate({
+            result = _animate.create({
                 target: "r1 r2"
                 translateX: function(t, i, l)
                     return (i + 1) * 100
@@ -448,7 +448,7 @@ namespace tests
                 return (i + 1) / 100
             end function
 
-            result = _animate({
+            result = _animate.create({
                 target: "r1 r2 r3",
                 x: 200,
                 ' animation params

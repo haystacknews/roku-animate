@@ -1,402 +1,408 @@
-function animate(params as object) as object
-    animation = _animate(params)
-    return animateUtils.createNodeFromAA(animation)
-end function
+' Public API
+namespace animate
+    function create(params as object) as object
+        animation = _animate.create(params)
+        return _animate.utils.createNodeFromAA(animation)
+    end function
+end namespace
 
-function _animate(params as object, recursive = true as boolean) as object
-    animations = []
-    animationParams = animateUtils.extractAnimationParams(params)
-    if (animationParams.duration = invalid)
-        animationParams.duration = 1
-    end if
+' Private methods
+namespace _animate
+    function create(params as object, recursive = true as boolean) as object
+        animations = []
+        animationParams = _animate.utils.extractAnimationParams(params)
+        if (animationParams.duration = invalid)
+            animationParams.duration = 1
+        end if
 
-    for each animationKey in animationParams.keys()
-        params.delete(animationKey)
-    end for
-
-    interpolatorParams = animateUtils.extractInterpolatorParams(params)
-    for each interpolatorKey in interpolatorParams.keys()
-        params.delete(interpolatorKey)
-    end for
-
-    targets = []
-    if (params.target <> invalid)
-        targets = params.target
-        params.delete("target")
-    end if
-
-    if (params.targets <> invalid)
-        targets = params.targets
-        params.delete("targets")
-    end if
-
-    autoplay = params.autoplay
-    if (autoplay = invalid)
-        autoplay = true
-    end if
-    params.delete("autoplay")
-
-    nodeTargets = getNodeTargets(targets)
-
-    subAnimations = []
-
-    if (recursive)
-        subKeys = []
-
-        for each item in params.items()
-            if (is._aa(item.value))
-                subParams = {}
-                subParams.append(animationParams)
-                subParams.append(interpolatorParams)
-                subParams.targets = nodeTargets
-                subParams[item.key] = item.value.value
-                item.value.delete("value")
-                subParams.append(item.value)
-                subAnimation = _animate(subParams, false)
-                subAnimations.push(animateUtils.shallowCopy(subAnimation))
-                subKeys.push(item.key)
-            end if
+        for each animationKey in animationParams.keys()
+            params.delete(animationKey)
         end for
 
-        for each subKey in subKeys
-            params.delete(subKey)
+        interpolatorParams = _animate.utils.extractInterpolatorParams(params)
+        for each interpolatorKey in interpolatorParams.keys()
+            params.delete(interpolatorKey)
         end for
-    end if
 
-    targetsLength = nodeTargets.count()
-    for i = 0 to targetsLength - 1
-        nodeTarget = nodeTargets[i]
-        if (nodeTarget.id = invalid or nodeTarget.id = "")
-            nodeTarget.id = `__animate_${rnd(42069)}` ' nice
+        targets = []
+        if (params.target <> invalid)
+            targets = params.target
+            params.delete("target")
         end if
 
-        targetInfo = {
-            nodeTarget: nodeTarget,
-            index: i,
-            targetsLength: targetsLength
-        }
-
-        finalAnimationParams = animateUtils.getFunctionValueParams(animationParams, targetInfo)
-        finalInterpolatorParams = animateUtils.getFunctionValueParams(interpolatorParams, targetInfo)
-        finalParams = animateUtils.getFunctionValueParams(params, targetInfo)
-
-        alternate = (finalParams.direction = "alternate")
-        if (alternate)
-            finalParams.direction = "normal"
+        if (params.targets <> invalid)
+            targets = params.targets
+            params.delete("targets")
         end if
 
-        animation = {
-            subtype: animateUtils.NodeNames.Animation,
-            children: getTargetInterpolators(nodeTarget, finalParams, animateUtils.shallowCopy(finalInterpolatorParams))
-        }
-        if (animation.children.count() > 0)
-            if (alternate)
-                alternatedParams = animateUtils.shallowCopy(finalParams)
-                alternatedParams.direction = "reverse"
-                alternated = {
-                    subtype: animateUtils.NodeNames.Animation,
-                    children: getTargetInterpolators(nodeTarget, alternatedParams, animateUtils.shallowCopy(finalInterpolatorParams))
-                }
-
-                animation.append(finalAnimationParams)
-                animation.repeat = false
-
-                alternated.append(finalAnimationParams)
-                alternated.repeat = false
-
-                seqAnim = {
-                    subtype: animateUtils.NodeNames.SequentialAnimation,
-                    children: [animateUtils.shallowCopy(animation), alternated]
-                }
-                seqAnim.repeat = finalAnimationParams.repeat
-                animations.push(seqAnim)
-            else
-                animation.append(finalAnimationParams)
-                animations.push(animateUtils.shallowCopy(animation))
-            end if
+        autoplay = params.autoplay
+        if (autoplay = invalid)
+            autoplay = true
         end if
-    end for
+        params.delete("autoplay")
 
-    if (recursive and subAnimations.count() > 0)
-        animations.append(subAnimations)
-    end if
+        nodeTargets = getNodeTargets(targets)
 
-    if (animations.count() > 1)
-        multipleAnimations = {
-            subtype: animateUtils.NodeNames.ParallelAnimation,
-            children: animations
-        }
+        subAnimations = []
+
         if (recursive)
-            multipleAnimations.control = autoplay ? "start" : "none"
-        end if
-        return multipleAnimations
-    else if (animations.count() = 1)
-        if (recursive)
-            animations[0].control = autoplay ? "start" : "none"
-        end if
-        return animations[0]
-    end if
+            subKeys = []
 
-    return animations
-end function
-
-function getTargetInterpolators(nodeTarget as object, params as object, globalInterpolatorParams as object) as object
-    interpolators = []
-    direction = params.direction
-    if (direction = invalid)
-        direction = "normal"
-    end if
-    params.delete("direction")
-
-    for each item in params.items()
-        ' Thanks Roku for not letting us split if statements
-        ' in multiple lines. This is very readable! :)
-        if (is.valid(item.value) and (is.special.prop(item.key) or nodeTarget.hasField(item.key)))
-            interpolator = getPropertyInterpolator(nodeTarget, item.key, item.value)
-            if (interpolator <> invalid)
-                finalInterpolator = globalInterpolatorParams
-                finalInterpolator.append(interpolator)
-
-                if (direction = "reverse")
-                    finalInterpolator.keyValue.reverse()
-                end if
-
-                if (finalInterpolator.key = invalid)
-                    keyValueCount = finalInterpolator.keyValue.count()
-                    finalInterpolator.key = []
-                    _step = 1 / (keyValueCount - 1)
-                    for i = 0 to keyValueCount - 1
-                        finalInterpolator.key.push(i * _step)
-                    end for
-                end if
-
-                interpolators.push(animateUtils.shallowCopy(finalInterpolator))
-            end if
-        end if
-    end for
-    return interpolators
-end function
-
-function getPropertyInterpolator(nodeTarget as object, property as string, value as dynamic) as dynamic
-    if (property = "translation" and is.arr2d(value))
-        value = [
-            nodeTarget.translation[0] + cdbl(value[0]),
-            nodeTarget.translation[1] + cdbl(value[1])
-        ]
-    end if
-
-    if (is.special.translation(property))
-        value = cdbl(value)
-        if (animateUtils.compareFieldStrings(property, "x"))
-            value = [value, nodeTarget.translation[1]]
-        else if (animateUtils.compareFieldStrings(property, "y"))
-            value = [nodeTarget.translation[0], value]
-        else if (animateUtils.compareFieldStrings(property, "translateX"))
-            currentX = nodeTarget.translation[0]
-            value = [currentX + value, nodeTarget.translation[1]]
-        else if (animateUtils.compareFieldStrings(property, "translateY"))
-            currentY = nodeTarget.translation[1]
-            value = [nodeTarget.translation[0], currentY + value]
-        end if
-        property = "translation"
-    end if
-
-    if (property = "rotation" and is.str(value) and value.endsWith("deg"))
-        degrees = value.tokenize("deg")[0].toFloat()
-        value = degrees * 0.01745329
-    end if
-
-    if (property = "scale" and is.number(value))
-        value = cdbl(value)
-        value = [value, value]
-    end if
-
-    currentValue = nodeTarget[property]
-
-    interpolator = {}
-    if (property = "color")
-        interpolator.subtype = animateUtils.NodeNames.ColorFieldInterpolator
-    else if (is.arr2d(value))
-        interpolator.subtype = animateUtils.NodeNames.Vector2DFieldInterpolator
-    else if (is.number(value))
-        interpolator.subtype = animateUtils.NodeNames.FloatFieldInterpolator
-    else
-        return invalid
-    end if
-
-    interpolator.append({
-        fieldToInterp: `${nodeTarget.id}.${property}`,
-        keyValue: [currentValue, value]
-    })
-
-    return interpolator
-end function
-
-function getNodeTargets(targets as dynamic) as object
-    nodeTargets = []
-
-    if (is.str(targets))
-        ' For a string `targets`, we split by spaces
-        ' and try to find the nodes in the current `m.top` scope.
-        ids = targets.tokenize(" ")
-        for each id in ids
-            nodeTarget = m.top.findNode(id)
-            if (is.valid(nodeTarget))
-                nodeTargets.push(nodeTarget)
-            end if
-        end for
-    else if (is.arr(targets))
-        ' For array targets, we recursively find targets inside
-        ' each element.
-        for each target in targets
-            nodeTargets.append(getNodeTargets(target))
-        end for
-    else if (is._node(targets))
-        ' For nodes we consider them directly
-        nodeTargets.push(targets)
-    end if
-
-    return nodeTargets
-end function
-
-namespace is
-    function valid(x as dynamic) as boolean
-        return x <> invalid
-    end function
-
-    function str(x as dynamic) as boolean
-        return is.valid(x) and getInterface(x, "ifString") <> invalid
-    end function
-
-    function arr(x as dynamic) as boolean
-        return is.valid(x) and getInterface(x, "ifArray") <> invalid
-    end function
-
-    function integer(x as dynamic) as boolean
-        return is.valid(x) and getInterface(x, "ifInt") <> invalid and (type(x) = "roInt" or type(x) = "roInteger" or type(x) = "Integer")
-    end function
-
-    function float(x as dynamic) as boolean
-        return is.valid(x) and (getInterface(x, "ifFloat") <> invalid or (type(x) = "roFloat" or type(x) = "Float"))
-    end function
-
-    function number(x as dynamic) as boolean
-        return is.float(x) or is.integer(x)
-    end function
-
-    function _node(x as dynamic) as boolean
-        return is.valid(x) and getInterface(x, "ifSGNodeField") <> invalid
-    end function
-
-    function arr2d(x as dynamic) as boolean
-        return is.valid(x) and is.arr(x) and x.count() = 2 and is.number(x[0]) and is.number(x[1])
-    end function
-
-    function _aa(x as dynamic) as boolean
-        return is.valid(x) and getInterface(x, "ifAssociativeArray") <> invalid
-    end function
-
-    function func(x as dynamic) as boolean
-        return is.valid(x) and getInterface(x, "ifFunction") <> invalid
-    end function
-
-    namespace special
-        function prop(x as dynamic) as boolean
-            return is.special.translation(x)
-        end function
-
-        function translation(x as dynamic) as boolean
-            if (not is.str(x))
-                return false
-            end if
-
-            specialProperties = ["x", "y", "translateX", "translateY"]
-            for each specialProperty in specialProperties
-                if (animateUtils.compareFieldStrings(specialProperty, x))
-                    return true
+            for each item in params.items()
+                if (_animate.is._aa(item.value))
+                    subParams = {}
+                    subParams.append(animationParams)
+                    subParams.append(interpolatorParams)
+                    subParams.targets = nodeTargets
+                    subParams[item.key] = item.value.value
+                    item.value.delete("value")
+                    subParams.append(item.value)
+                    subAnimation = _animate.create(subParams, false)
+                    subAnimations.push(_animate.utils.shallowCopy(subAnimation))
+                    subKeys.push(item.key)
                 end if
             end for
 
-            return false
-        end function
-    end namespace
-end namespace
-
-namespace animateUtils
-    function createNodeFromAA(aa as object) as object
-        node = CreateObject("roSGNode", aa.subtype)
-        aa.delete("subtype")
-        node.update(aa)
-        return node
-    end function
-
-    function compareFieldStrings(x as string, y as string) as boolean
-        return lcase(x) = lcase(y)
-    end function
-
-    function getAnimationParams() as object
-        return [
-            "repeat",
-            "delay",
-            "duration",
-            "easeFunction",
-            "easeInPercent",
-            "easeOutPercent",
-            "optional"
-        ]
-    end function
-
-    function getInterpolatorParams() as object
-        return [
-            "key",
-            "fraction",
-            "reverse"
-        ]
-    end function
-
-    function extractParams(source as object, wantedParams as object) as object
-        result = {}
-        for each wantedParam in wantedParams
-            if (source[wantedParam] <> invalid)
-                result[wantedParam] = source[wantedParam]
-            end if
-        end for
-        return result
-    end function
-
-    function extractAnimationParams(params as object) as object
-        return animateUtils.extractParams(params, animateUtils.getAnimationParams())
-    end function
-
-    function extractInterpolatorParams(params as object) as object
-        return animateUtils.extractParams(params, animateUtils.getInterpolatorParams())
-    end function
-
-    function shallowCopy(x as object) as object
-        y = {}
-        if (is.arr(x))
-            y = []
+            for each subKey in subKeys
+                params.delete(subKey)
+            end for
         end if
-        y.append(x)
-        return y
-    end function
 
-    function getFunctionValueParams(params as object, targetInfo as object) as object
-        copy = animateUtils.shallowCopy(params)
-        for each item in copy.items()
-            if (is.func(item.value))
-                copy[item.key] = item.value(targetInfo.nodeTarget, targetInfo.index, targetInfo.targetsLength)
+        targetsLength = nodeTargets.count()
+        for i = 0 to targetsLength - 1
+            nodeTarget = nodeTargets[i]
+            if (nodeTarget.id = invalid or nodeTarget.id = "")
+                nodeTarget.id = `__animate_${rnd(42069)}` ' nice
+            end if
+
+            targetInfo = {
+                nodeTarget: nodeTarget,
+                index: i,
+                targetsLength: targetsLength
+            }
+
+            finalAnimationParams = _animate.utils.getFunctionValueParams(animationParams, targetInfo)
+            finalInterpolatorParams = _animate.utils.getFunctionValueParams(interpolatorParams, targetInfo)
+            finalParams = _animate.utils.getFunctionValueParams(params, targetInfo)
+
+            alternate = (finalParams.direction = "alternate")
+            if (alternate)
+                finalParams.direction = "normal"
+            end if
+
+            animation = {
+                subtype: _animate.utils.nodes.Animation,
+                children: getTargetInterpolators(nodeTarget, finalParams, _animate.utils.shallowCopy(finalInterpolatorParams))
+            }
+            if (animation.children.count() > 0)
+                if (alternate)
+                    alternatedParams = _animate.utils.shallowCopy(finalParams)
+                    alternatedParams.direction = "reverse"
+                    alternated = {
+                        subtype: _animate.utils.nodes.Animation,
+                        children: getTargetInterpolators(nodeTarget, alternatedParams, _animate.utils.shallowCopy(finalInterpolatorParams))
+                    }
+
+                    animation.append(finalAnimationParams)
+                    animation.repeat = false
+
+                    alternated.append(finalAnimationParams)
+                    alternated.repeat = false
+
+                    seqAnim = {
+                        subtype: _animate.utils.nodes.SequentialAnimation,
+                        children: [_animate.utils.shallowCopy(animation), alternated]
+                    }
+                    seqAnim.repeat = finalAnimationParams.repeat
+                    animations.push(seqAnim)
+                else
+                    animation.append(finalAnimationParams)
+                    animations.push(_animate.utils.shallowCopy(animation))
+                end if
             end if
         end for
-        return copy
+
+        if (recursive and subAnimations.count() > 0)
+            animations.append(subAnimations)
+        end if
+
+        if (animations.count() > 1)
+            multipleAnimations = {
+                subtype: _animate.utils.nodes.ParallelAnimation,
+                children: animations
+            }
+            if (recursive)
+                multipleAnimations.control = autoplay ? "start" : "none"
+            end if
+            return multipleAnimations
+        else if (animations.count() = 1)
+            if (recursive)
+                animations[0].control = autoplay ? "start" : "none"
+            end if
+            return animations[0]
+        end if
+
+        return animations
     end function
 
-    enum NodeNames
-        Animation = "Animation"
-        ParallelAnimation = "ParallelAnimation"
-        SequentialAnimation = "SequentialAnimation"
-        ColorFieldInterpolator = "ColorFieldInterpolator"
-        Vector2DFieldInterpolator = "Vector2DFieldInterpolator"
-        FloatFieldInterpolator = "FloatFieldInterpolator"
-    end enum
+    function getTargetInterpolators(nodeTarget as object, params as object, globalInterpolatorParams as object) as object
+        interpolators = []
+        direction = params.direction
+        if (direction = invalid)
+            direction = "normal"
+        end if
+        params.delete("direction")
+
+        for each item in params.items()
+            ' Thanks Roku for not letting us split if statements
+            ' in multiple lines. This is very readable! :)
+            if (_animate.is.valid(item.value) and (_animate.is.special.prop(item.key) or nodeTarget.hasField(item.key)))
+                interpolator = getPropertyInterpolator(nodeTarget, item.key, item.value)
+                if (interpolator <> invalid)
+                    finalInterpolator = globalInterpolatorParams
+                    finalInterpolator.append(interpolator)
+
+                    if (direction = "reverse")
+                        finalInterpolator.keyValue.reverse()
+                    end if
+
+                    if (finalInterpolator.key = invalid)
+                        keyValueCount = finalInterpolator.keyValue.count()
+                        finalInterpolator.key = []
+                        _step = 1 / (keyValueCount - 1)
+                        for i = 0 to keyValueCount - 1
+                            finalInterpolator.key.push(i * _step)
+                        end for
+                    end if
+
+                    interpolators.push(_animate.utils.shallowCopy(finalInterpolator))
+                end if
+            end if
+        end for
+        return interpolators
+    end function
+
+    function getPropertyInterpolator(nodeTarget as object, property as string, value as dynamic) as dynamic
+        if (property = "translation" and _animate.is.arr2d(value))
+            value = [
+                nodeTarget.translation[0] + cdbl(value[0]),
+                nodeTarget.translation[1] + cdbl(value[1])
+            ]
+        end if
+
+        if (_animate.is.special.translation(property))
+            value = cdbl(value)
+            if (_animate.utils.compareFieldStrings(property, "x"))
+                value = [value, nodeTarget.translation[1]]
+            else if (_animate.utils.compareFieldStrings(property, "y"))
+                value = [nodeTarget.translation[0], value]
+            else if (_animate.utils.compareFieldStrings(property, "translateX"))
+                currentX = nodeTarget.translation[0]
+                value = [currentX + value, nodeTarget.translation[1]]
+            else if (_animate.utils.compareFieldStrings(property, "translateY"))
+                currentY = nodeTarget.translation[1]
+                value = [nodeTarget.translation[0], currentY + value]
+            end if
+            property = "translation"
+        end if
+
+        if (property = "rotation" and _animate.is.str(value) and value.endsWith("deg"))
+            degrees = value.tokenize("deg")[0].toFloat()
+            value = degrees * 0.01745329
+        end if
+
+        if (property = "scale" and _animate.is.number(value))
+            value = cdbl(value)
+            value = [value, value]
+        end if
+
+        currentValue = nodeTarget[property]
+
+        interpolator = {}
+        if (property = "color")
+            interpolator.subtype = _animate.utils.nodes.ColorFieldInterpolator
+        else if (_animate.is.arr2d(value))
+            interpolator.subtype = _animate.utils.nodes.Vector2DFieldInterpolator
+        else if (_animate.is.number(value))
+            interpolator.subtype = _animate.utils.nodes.FloatFieldInterpolator
+        else
+            return invalid
+        end if
+
+        interpolator.append({
+            fieldToInterp: `${nodeTarget.id}.${property}`,
+            keyValue: [currentValue, value]
+        })
+
+        return interpolator
+    end function
+
+    function getNodeTargets(targets as dynamic) as object
+        nodeTargets = []
+
+        if (_animate.is.str(targets))
+            ' For a string `targets`, we split by spaces
+            ' and try to find the nodes in the current `m.top` scope.
+            ids = targets.tokenize(" ")
+            for each id in ids
+                nodeTarget = m.top.findNode(id)
+                if (_animate.is.valid(nodeTarget))
+                    nodeTargets.push(nodeTarget)
+                end if
+            end for
+        else if (_animate.is.arr(targets))
+            ' For array targets, we recursively find targets inside
+            ' each element.
+            for each target in targets
+                nodeTargets.append(getNodeTargets(target))
+            end for
+        else if (_animate.is._node(targets))
+            ' For nodes we consider them directly
+            nodeTargets.push(targets)
+        end if
+
+        return nodeTargets
+    end function
+
+    namespace is
+        function valid(x as dynamic) as boolean
+            return x <> invalid
+        end function
+
+        function str(x as dynamic) as boolean
+            return _animate.is.valid(x) and getInterface(x, "ifString") <> invalid
+        end function
+
+        function arr(x as dynamic) as boolean
+            return _animate.is.valid(x) and getInterface(x, "ifArray") <> invalid
+        end function
+
+        function integer(x as dynamic) as boolean
+            return _animate.is.valid(x) and getInterface(x, "ifInt") <> invalid and (type(x) = "roInt" or type(x) = "roInteger" or type(x) = "Integer")
+        end function
+
+        function float(x as dynamic) as boolean
+            return _animate.is.valid(x) and (getInterface(x, "ifFloat") <> invalid or (type(x) = "roFloat" or type(x) = "Float"))
+        end function
+
+        function number(x as dynamic) as boolean
+            return _animate.is.float(x) or _animate.is.integer(x)
+        end function
+
+        function _node(x as dynamic) as boolean
+            return _animate.is.valid(x) and getInterface(x, "ifSGNodeField") <> invalid
+        end function
+
+        function arr2d(x as dynamic) as boolean
+            return _animate.is.valid(x) and _animate.is.arr(x) and x.count() = 2 and _animate.is.number(x[0]) and _animate.is.number(x[1])
+        end function
+
+        function _aa(x as dynamic) as boolean
+            return _animate.is.valid(x) and getInterface(x, "ifAssociativeArray") <> invalid
+        end function
+
+        function func(x as dynamic) as boolean
+            return _animate.is.valid(x) and getInterface(x, "ifFunction") <> invalid
+        end function
+
+        namespace special
+            function prop(x as dynamic) as boolean
+                return _animate.is.special.translation(x)
+            end function
+
+            function translation(x as dynamic) as boolean
+                if (not _animate.is.str(x))
+                    return false
+                end if
+
+                specialProperties = ["x", "y", "translateX", "translateY"]
+                for each specialProperty in specialProperties
+                    if (_animate.utils.compareFieldStrings(specialProperty, x))
+                        return true
+                    end if
+                end for
+
+                return false
+            end function
+        end namespace
+    end namespace
+
+    namespace utils
+        function createNodeFromAA(aa as object) as object
+            node = CreateObject("roSGNode", aa.subtype)
+            aa.delete("subtype")
+            node.update(aa)
+            return node
+        end function
+
+        function compareFieldStrings(x as string, y as string) as boolean
+            return lcase(x) = lcase(y)
+        end function
+
+        function getAnimationParams() as object
+            return [
+                "repeat",
+                "delay",
+                "duration",
+                "easeFunction",
+                "easeInPercent",
+                "easeOutPercent",
+                "optional"
+            ]
+        end function
+
+        function getInterpolatorParams() as object
+            return [
+                "key",
+                "fraction",
+                "reverse"
+            ]
+        end function
+
+        function extractParams(source as object, wantedParams as object) as object
+            result = {}
+            for each wantedParam in wantedParams
+                if (source[wantedParam] <> invalid)
+                    result[wantedParam] = source[wantedParam]
+                end if
+            end for
+            return result
+        end function
+
+        function extractAnimationParams(params as object) as object
+            return _animate.utils.extractParams(params, _animate.utils.getAnimationParams())
+        end function
+
+        function extractInterpolatorParams(params as object) as object
+            return _animate.utils.extractParams(params, _animate.utils.getInterpolatorParams())
+        end function
+
+        function shallowCopy(x as object) as object
+            y = {}
+            if (_animate.is.arr(x))
+                y = []
+            end if
+            y.append(x)
+            return y
+        end function
+
+        function getFunctionValueParams(params as object, targetInfo as object) as object
+            copy = _animate.utils.shallowCopy(params)
+            for each item in copy.items()
+                if (_animate.is.func(item.value))
+                    copy[item.key] = item.value(targetInfo.nodeTarget, targetInfo.index, targetInfo.targetsLength)
+                end if
+            end for
+            return copy
+        end function
+
+        enum nodes
+            Animation = "Animation"
+            ParallelAnimation = "ParallelAnimation"
+            SequentialAnimation = "SequentialAnimation"
+            ColorFieldInterpolator = "ColorFieldInterpolator"
+            Vector2DFieldInterpolator = "Vector2DFieldInterpolator"
+            FloatFieldInterpolator = "FloatFieldInterpolator"
+        end enum
+    end namespace
 end namespace
