@@ -1,53 +1,73 @@
 import "pkg:/source/animate.bs"
 
 sub init()
-    m.square1 = createSquareAndShadow({
-        id: "square",
-        translation: [200, 200]
-    })
+    m.canvas = m.top.findNode("canvas")
+    m.numOfSquares = 3
+    for i = 0 to m.numOfSquares - 1
+        createSquareAndShadow({ translation: [0, i * 50], id: `r${i}` }, m.canvas)
+    end for
+
+    r0 = m.top.findNode("r0")
+    r0.addFields({ x: 170 })
+    r0.color = "#ff6961"
+
+    r1 = m.top.findNode("r1")
+    r1.addFields({ x: 80 })
+    r1.color = "#A7C7E7"
+
+    r2 = m.top.findNode("r2")
+    r2.addFields({ x: 270 })
+    r2.color = "#e0f0e3"
 end sub
 
 sub start(_ = invalid as dynamic)
     m.animation = animate({
-        targets: m.square1,
-        translateX: {
-            value: 450,
-            duration: 0.8,
-            easeFunction: "linear"
-        },
-        rotation: {
-            value: "-360deg",
-            duration: 1.8
-        },
-        scale: {
-            value: 2,
-            duration: 1.6,
-            delay: 0.8,
-            easeFunction: "inOutQuartic"
-        },
-        color: "#FAFA33",
-        delay: 0.25
+        targets: "r0 r1 r2",
+        ' bs:disable-next-line
+        translation: function (el, i, t)
+            return [el.x, 66 + (-66 * i)]
+        end function,
+        ' bs:disable-next-line
+        scale: function (el, i, t)
+            return (t - i) + 0.25
+        end function,
+        ' bs:disable-next-line
+        rotation: function (el, i, t)
+            return `${rnd(720) - 360}deg`
+        end function,
+        ' bs:disable-next-line
+        duration: function (el, i, t)
+            dur = (rnd(600) / 1000) + 1.2
+            return dur
+        end function
+        ' bs:disable-next-line
+        delay: function (el, i, t)
+            del = rnd(400) / 1000
+            return del
+        end function,
+        direction: "alternate",
+        repeat: true
     })
 end sub
 
-function createSquareAndShadow(_squareFields as object) as object
+function createSquareAndShadow(_squareFields as object, target = m.top as object) as object
     squareFields = {
-        width: 100,
-        height: 100,
-        color: "#FF4B4B",
-        scaleRotateCenter: [50, 50]
+        width: 22,
+        height: 22,
+        scaleRotateCenter: [11, 11],
+        opacity: 0.8
     }
 
     squareFields.append(_squareFields)
 
-    shadow = m.top.createChild("Rectangle")
+    shadow = target.createChild("Rectangle")
     shadow.update(squareFields)
     shadow.update({
         opacity: 0.5,
         id: invalid
     })
 
-    square = m.top.createChild("Rectangle")
+    square = target.createChild("Rectangle")
     square.update(squareFields)
     return square
 end function

@@ -5,6 +5,6 @@
         <function name="start" />
     </interface>
     <children>
-        <Label id="welcome" />
+        <Group id="canvas" translation="[192, 206]"/>
     </children>
 </component>

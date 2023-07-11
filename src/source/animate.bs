@@ -80,14 +80,40 @@ function _animate(params as object, recursive = true as boolean) as object
         finalInterpolatorParams = animateUtils.getFunctionValueParams(interpolatorParams, targetInfo)
         finalParams = animateUtils.getFunctionValueParams(params, targetInfo)
 
+        alternate = (finalParams.direction = "alternate")
+        if (alternate)
+            finalParams.direction = "normal"
+        end if
+
         animation = {
             subtype: animateUtils.NodeNames.Animation,
-            children: getTargetInterpolators(nodeTarget, finalParams, finalInterpolatorParams)
+            children: getTargetInterpolators(nodeTarget, finalParams, animateUtils.shallowCopy(finalInterpolatorParams))
         }
-
-        animation.append(finalAnimationParams)
         if (animation.children.count() > 0)
-            animations.push(animateUtils.shallowCopy(animation))
+            if (alternate)
+                alternatedParams = animateUtils.shallowCopy(finalParams)
+                alternatedParams.direction = "reverse"
+                alternated = {
+                    subtype: animateUtils.NodeNames.Animation,
+                    children: getTargetInterpolators(nodeTarget, alternatedParams, animateUtils.shallowCopy(finalInterpolatorParams))
+                }
+
+                animation.append(finalAnimationParams)                
+                animation.repeat = false
+
+                alternated.append(finalAnimationParams)
+                alternated.repeat = false
+
+                seqAnim = {
+                    subtype: animateUtils.NodeNames.SequentialAnimation,
+                    children: [animateUtils.shallowCopy(animation), alternated]
+                }
+                seqAnim.repeat = finalAnimationParams.repeat
+                animations.push(seqAnim)
+            else
+                animation.append(finalAnimationParams)
+                animations.push(animateUtils.shallowCopy(animation))
+            end if
         end if
     end for
 
@@ -133,11 +159,6 @@ function getTargetInterpolators(nodeTarget as object, params as object, globalIn
 
                 if (direction = "reverse")
                     finalInterpolator.keyValue.reverse()
-                else if (direction = "alternate")
-                    keyValueCopy = animateUtils.shallowCopy(finalInterpolator.keyValue)
-                    keyValueCopy.reverse()
-                    finalInterpolator.keyValue.pop()
-                    finalInterpolator.keyValue.append(keyValueCopy)
                 end if
 
                 if (finalInterpolator.key = invalid)
@@ -351,7 +372,7 @@ namespace animateUtils
         return animateUtils.extractParams(params, animateUtils.getInterpolatorParams())
     end function
 
-    function shallowCopy(x as object)
+    function shallowCopy(x as object) as object
         y = {}
         if (is.arr(x))
             y = []
@@ -360,7 +381,7 @@ namespace animateUtils
         return y
     end function
 
-    function getFunctionValueParams(params as object, targetInfo as object)
+    function getFunctionValueParams(params as object, targetInfo as object) as object
         copy = animateUtils.shallowCopy(params)
         for each item in copy.items()
             if (is.func(item.value))
@@ -373,6 +394,7 @@ namespace animateUtils
     enum NodeNames
         Animation = "Animation"
         ParallelAnimation = "ParallelAnimation"
+        SequentialAnimation = "SequentialAnimation"
         ColorFieldInterpolator = "ColorFieldInterpolator"
         Vector2DFieldInterpolator = "Vector2DFieldInterpolator"
         FloatFieldInterpolator = "FloatFieldInterpolator"

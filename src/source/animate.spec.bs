@@ -372,16 +372,37 @@ class TestSuite extends rooibos.BaseTestSuite
         m.assertEqual(result.children[0].key, [0.0, 1.0])
     end function
 
-    @it("alternate")
+    @it("alternate: creates a sequential animation with the 2nd one reversed")
     function _()
         result = _animate({
             target: m.r1,
             translateX: 250,
-            direction: "alternate"
+            direction: "alternate",
+            duration: 2,
+            delay: 3,
+            repeat: true
         })
 
-        m.assertEqual(result.children[0].keyValue, [[0.0, 0.0], [250.0, 0.0], [0.0, 0.0]])
-        m.assertEqual(result.children[0].key, [0.0, 0.5, 1.0])
+        m.assertEqual(result.subtype, animateUtils.NodeNames.SequentialAnimation)
+        m.assertArrayCount(result.children, 2)
+        m.assertTrue(result.repeat)
+        m.assertInvalid(result.duration)
+        m.assertInvalid(result.delay)
+
+        animation1 = result.children[0]
+        m.assertEqual(animation1.duration, 2)
+        m.assertEqual(animation1.delay, 3)
+        m.assertFalse(animation1.repeat)
+        m.assertEqual(animation1.children[0].keyValue, [[0.0, 0.0], [250.0, 0.0]])
+
+        animation2 = result.children[1]
+        m.assertEqual(animation2.duration, 2)
+        m.assertEqual(animation2.delay, 3)
+        m.assertFalse(animation2.repeat)
+        m.assertEqual(animation2.children[0].keyValue, [[250.0, 0.0], [0.0, 0.0]])
+
+        ' m.assertEqual(result.children[0].keyValue, [[0.0, 0.0], [250.0, 0.0], [0.0, 0.0]])
+        ' m.assertEqual(result.children[0].key, [0.0, 0.5, 1.0])
     end function
 
     @describe("function based parameters")
