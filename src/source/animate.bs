@@ -98,7 +98,7 @@ function _animate(params as object, recursive = true as boolean) as object
                     children: getTargetInterpolators(nodeTarget, alternatedParams, animateUtils.shallowCopy(finalInterpolatorParams))
                 }
 
-                animation.append(finalAnimationParams)                
+                animation.append(finalAnimationParams)
                 animation.repeat = false
 
                 alternated.append(finalAnimationParams)
@@ -263,7 +263,7 @@ namespace is
     function valid(x as dynamic) as boolean
         return x <> invalid
     end function
-    
+
     function str(x as dynamic) as boolean
         return is.valid(x) and getInterface(x, "ifString") <> invalid
     end function
@@ -277,7 +277,7 @@ namespace is
     end function
 
     function float(x as dynamic) as boolean
-        return is.valid(x) and (getInterface(x, "ifFloat") <> invalid or (type(x) = "roFloat" Or type(x) = "Float"))
+        return is.valid(x) and (getInterface(x, "ifFloat") <> invalid or (type(x) = "roFloat" or type(x) = "Float"))
     end function
 
     function number(x as dynamic) as boolean
@@ -309,14 +309,14 @@ namespace is
             if (not is.str(x))
                 return false
             end if
-    
+
             specialProperties = ["x", "y", "translateX", "translateY"]
             for each specialProperty in specialProperties
                 if (animateUtils.compareFieldStrings(specialProperty, x))
                     return true
                 end if
             end for
-    
+
             return false
         end function
     end namespace

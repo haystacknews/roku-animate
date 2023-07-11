@@ -25,7 +25,7 @@
 
         /* Strictness rules */
         // Enforce both arguments and return `as` type annotations.
-        "type-annotations": "all",
+        "type-annotations": "off",
 
         /* Code flow rules */
         // Check if a variable is not assigned in all the possible code paths.

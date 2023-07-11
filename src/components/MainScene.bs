@@ -24,24 +24,24 @@ sub start(_ = invalid as dynamic)
     m.animation = animate({
         targets: "r0 r1 r2",
         ' bs:disable-next-line
-        translation: function (el, i, t)
+        translation: function(el, i, t)
             return [el.x, 66 + (-66 * i)]
         end function,
         ' bs:disable-next-line
-        scale: function (el, i, t)
+        scale: function(el, i, t)
             return (t - i) + 0.25
         end function,
         ' bs:disable-next-line
-        rotation: function (el, i, t)
+        rotation: function(el, i, t)
             return `${rnd(720) - 360}deg`
         end function,
         ' bs:disable-next-line
-        duration: function (el, i, t)
+        duration: function(el, i, t)
             dur = (rnd(600) / 1000) + 1.2
             return dur
         end function
         ' bs:disable-next-line
-        delay: function (el, i, t)
+        delay: function(el, i, t)
             del = rnd(400) / 1000
             return del
         end function,
