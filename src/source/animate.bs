@@ -92,15 +92,16 @@ namespace _animate
 
             animation = {
                 subtype: _animate.utils.nodes.Animation,
-                children: getTargetInterpolators(nodeTarget, finalParams, _animate.utils.shallowCopy(finalInterpolatorParams))
+                children: _animate.getTargetInterpolators(nodeTarget, finalParams, _animate.utils.shallowCopy(finalInterpolatorParams))
             }
+
             if (animation.children.count() > 0)
                 if (alternate)
                     alternatedParams = _animate.utils.shallowCopy(finalParams)
                     alternatedParams.direction = "reverse"
                     alternated = {
                         subtype: _animate.utils.nodes.Animation,
-                        children: getTargetInterpolators(nodeTarget, alternatedParams, _animate.utils.shallowCopy(finalInterpolatorParams))
+                        children: _animate.getTargetInterpolators(nodeTarget, alternatedParams, _animate.utils.shallowCopy(finalInterpolatorParams))
                     }
 
                     animation.append(finalAnimationParams)
@@ -157,7 +158,7 @@ namespace _animate
             ' Thanks Roku for not letting us split if statements
             ' in multiple lines. This is very readable! :)
             if (_animate.is.valid(item.value) and (_animate.is.special.prop(item.key) or nodeTarget.hasField(item.key)))
-                interpolator = getPropertyInterpolator(nodeTarget, item.key, item.value)
+                interpolator = _animate.getPropertyInterpolator(nodeTarget, item.key, item.value)
                 if (interpolator <> invalid)
                     finalInterpolator = globalInterpolatorParams
                     finalInterpolator.append(interpolator)
@@ -221,7 +222,7 @@ namespace _animate
         currentValue = nodeTarget[property]
 
         interpolator = {}
-        if (property = "color")
+        if (_animate.is.colorField(property))
             interpolator.subtype = _animate.utils.nodes.ColorFieldInterpolator
         else if (_animate.is.arr2d(value))
             interpolator.subtype = _animate.utils.nodes.Vector2DFieldInterpolator
@@ -305,6 +306,19 @@ namespace _animate
 
         function func(x as dynamic) as boolean
             return _animate.is.valid(x) and getInterface(x, "ifFunction") <> invalid
+        end function
+
+        function colorField(x as dynamic) as boolean
+            colorFields = ["color", "blendColor"]
+            if (not _animate.is.str(x))
+                return false
+            end if
+            for each cf in colorFields
+                if (_animate.utils.compareFieldStrings(cf, x))
+                    return true
+                end if
+            end for
+            return false
         end function
 
         namespace special
