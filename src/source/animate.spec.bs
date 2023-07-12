@@ -317,26 +317,26 @@ namespace tests
 
         @describe("autoplay")
 
-        @it("default (true)")
+        @it("default (false)")
         function _()
             result = _animate.create({
                 target: m.r1,
-                x: 20
-            })
-            m.assertEqual(result.control, "start")
-        end function
-
-        @it("false")
-        function _()
-            result = _animate.create({
-                target: m.r1,
-                autoplay: false,
                 x: 20
             })
             m.assertEqual(result.control, "none")
         end function
 
-        @it("only in recursive mode")
+        @it("true")
+        function _()
+            result = _animate.create({
+                target: m.r1,
+                autoplay: true,
+                x: 20
+            })
+            m.assertEqual(result.control, "start")
+        end function
+
+        @it("only true in recursive mode")
         function _()
             result = _animate.create({
                 target: m.r1,

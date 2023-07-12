@@ -37,7 +37,7 @@ namespace _animate
 
         autoplay = params.autoplay
         if (autoplay = invalid)
-            autoplay = true
+            autoplay = false
         end if
         params.delete("autoplay")
 
