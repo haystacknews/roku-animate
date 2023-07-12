@@ -235,6 +235,16 @@ namespace tests
             m.assertEqual(result.children[0].keyValue, [[1.0, 1.0], [2.0, 2.0]])
         end function
 
+        @it("scale accepts single value float")
+        function _()
+            result = _animate.create({
+                target: m.r1,
+                scale: 2.5
+            })
+
+            m.assertEqual(result.children[0].keyValue, [[1.0, 1.0], [2.5, 2.5]])
+        end function
+
         @describe("object properties")
 
         @it("specific parameters per property")

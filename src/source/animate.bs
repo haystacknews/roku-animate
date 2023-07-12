@@ -212,7 +212,9 @@ namespace _animate
         end if
 
         if (property = "scale" and _animate.is.number(value))
-            value = cdbl(value)
+            if (_animate.is.integer(value))
+                value = cdbl(value)
+            end if
             value = [value, value]
         end if
 
