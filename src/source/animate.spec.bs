@@ -492,5 +492,50 @@ namespace tests
                 m.assertEqual(interp.reverse, boolFunc(0, i, 0))
             end for
         end function
+
+        @describe("timeline")
+
+        @it("parallel timeline")
+        function _()
+            tl = animate.timeline({ target: m.r1, translateX: 20, delay: 0.8 })
+            m.assertEqual(tl.nodeObject.subtype, _animate.utils.nodes.ParallelAnimation)
+            m.assertEqual(tl.nodeObject.children[0].subtype, _animate.utils.nodes.Animation)
+            m.assertEqual(tl.nodeObject.children[0].children[0].fieldToInterp, "r1.translation")
+            m.assertEqual(tl.nodeObject.children[0].delay, 0.8)
+
+            tl2 = tl.add({ target: m.r2, scale: 2.5, delay: 2 })
+
+            m.assertEqual(tl2.nodeObject.children[1].subtype, _animate.utils.nodes.Animation)
+            m.assertEqual(tl2.nodeObject.children[1].children[0].fieldToInterp, "r2.scale")
+            m.assertEqual(tl2.nodeObject.children[1].delay, 2)
+        end function
+
+        @it("sequential timeline")
+        function _()
+            tl = animate.timeline({ target: m.r1, translateX: 20, delay: 0.8 }, true)
+            m.assertEqual(tl.nodeObject.subtype, _animate.utils.nodes.SequentialAnimation)
+        end function
+
+        @it("specific params can be inherited")
+        function _()
+            r3 = m.canvas.createChild("Rectangle")
+            r3.id = "r3"
+
+            ' everyone except `repeat` and `translateX` should be inherited
+            tl = animate.timeline({
+                targets: "r1 r2",
+                translateX: 20,
+                easeFunction: "linear",
+                duration: 2,
+                delay: 1,
+                repeat: true
+            }, true)
+
+            m.assertEqual(tl.nodeObject.subtype, _animate.utils.nodes.SequentialAnimation)
+            m.assertEqual(tl.nodeObject.children[0].subtype, _animate.utils.nodes.ParallelAnimation)
+            m.assertTrue(tl.nodeObject.repeat)
+
+            m.assertEqual(tl.nodeObject.children[0].children[0].subtype, _animate.utils.nodes.Animation)
+        end function
     end class
 end namespace

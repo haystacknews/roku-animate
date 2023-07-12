@@ -4,6 +4,15 @@ namespace animate
         animation = _animate.create(params)
         return _animate.utils.createNodeFromAA(animation)
     end function
+
+    ' Returns a random integer between min and max, inclusive
+    function random(min as integer, max as integer) as integer
+        return rnd(max - min) + min
+    end function
+
+    function timeline(params as object, sequential = false as boolean) as object
+        return new _animate.Timeline(params, sequential)
+    end function
 end namespace
 
 ' Private methods
@@ -266,6 +275,36 @@ namespace _animate
 
         return nodeTargets
     end function
+
+    class Timeline
+        sub new(initialParams as object, sequential as boolean)
+            initialParams = initialParams
+            m.inheritableParams = _animate.utils.extractParams(initialParams, [
+                "targets",
+                "target",
+                "easeFunction",
+                "duration",
+                "delay"
+            ])
+
+            nodeName = sequential ? _animate.utils.nodes.SequentialAnimation : _animate.utils.nodes.ParallelAnimation
+            m.nodeObject = {
+                subtype: nodeName,
+                children: [_animate.create(initialParams)]
+            }
+        end sub
+
+        function add(params as object) as object
+            finalParams = _animate.utils.shallowCopy(m.inheritableParams)
+            finalParams.append(params)
+            m.nodeObject.children.push(_animate.create(finalParams))
+            return m
+        end function
+
+        function getAnimation() as object
+            return _animate.utils.createNodeFromAA(m.nodeObject)
+        end function
+    end class
 
     namespace is
         function valid(x as dynamic) as boolean
