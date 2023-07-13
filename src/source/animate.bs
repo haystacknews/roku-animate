@@ -13,6 +13,141 @@ namespace animate
     function timeline(params as object) as object
         return new _animate.Timeline(params)
     end function
+
+    ' All of these have been generated with GPT4,
+    ' hopefully the math is ok :)
+    namespace penner
+        ' Start slow and accelerate
+        function easeInSine(t as Float) as Float
+            return -1 * cos(t * _animate.utils.constants.radiansFactor) + 1
+        end function
+        
+        ' Start fast and decelerate
+        function easeOutSine(t as Float) as Float
+            return sin(t * _animate.utils.constants.radiansFactor)
+        end function
+        
+        ' Start slow and accelerate and then decelerate
+        function easeInOutSine(t as Float) as Float
+            return -0.5 * (cos(_animate.utils.constants.pi * t) - 1)
+        end function
+        
+        ' Start fast and decelerate and then accelerate
+        function easeOutInSine(t as Float) as Float
+            if t < 0.5 then
+                return easeOutSine(t * 2) / 2
+            else
+                return easeInSine((t - 0.5) * 2) / 2 + 0.5
+            end if
+        end function
+
+        ' The *Circ functions create an animation that
+        ' accelerates and decelerates respectively in a manner that resembles
+        ' a quarter of a circle.
+
+        function easeInCirc(t as Float) as Float
+            return -1 * (sqr(1 - t * t) - 1)
+        end function
+        
+        function easeOutCirc(t as Float) as Float
+            t = t - 1
+            return sqr(1 - t * t)
+        end function
+        
+        function easeInOutCirc(t as Float) as Float
+            if t < 0.5 then
+                return -0.5 * (sqr(1 - 4 * t * t) - 1)
+            else
+                t = t - 1
+                return 0.5 * (sqr(1 - 4 * t * t) + 1)
+            end if
+        end function
+        
+        function easeOutInCirc(t as Float) as Float
+            if t < 0.5 then
+                return easeOutCirc(t * 2) / 2
+            else
+                return easeInCirc((t - 0.5) * 2) / 2 + 0.5
+            end if
+        end function
+
+        ' The *Back functions create an animation
+        ' that overshoots the final state and then comes back.
+        ' This creates a "pullback" or "draw back" effect at the beginning
+        ' or end of the animation, respectively.
+        ' `s` is a constant that determines the amount of overshoot.
+        ' The value 1.70158 results in about a 10% overshoot.
+
+        function easeInBack(t as Float) as Float
+            s = 1.70158
+            return t * t * ((s + 1) * t - s)
+        end function
+        
+        function easeOutBack(t as Float) as Float
+            s = 1.70158
+            t = t - 1
+            return (t * t * ((s + 1) * t + s) + 1)
+        end function
+        
+        function easeInOutBack(t as Float) as Float
+            ' Adjust the overshoot to achieve a visually
+            ' pleasing result for the combined "in" and "out" animation.
+            s = 1.70158 * 1.525
+            if t < 0.5 then
+                return (t * t * ((s + 1) * t - s)) / 2
+            else
+                t = t - 2
+                return (t * t * ((s + 1) * t + s) + 2) / 2
+            end if
+        end function
+        
+        function easeOutInBack(t as Float) as Float
+            if t < 0.5 then
+                return easeOutBack(t * 2) / 2
+            else
+                return easeInBack((t - 0.5) * 2) / 2 + 0.5
+            end if
+        end function
+
+        ' The *Bounce functions create animations that mimic a bouncing effect.
+        ' The constants in the function (7.5625, 2.75, etc.)
+        ' are chosen empirically to make the bounce effect look good.
+
+        function easeInBounce(t as Float) as Float
+            return 1 - easeOutBounce(1 - t)
+        end function
+        
+        function easeOutBounce(t as Float) as Float
+            if t < (1 / 2.75) then
+                return (7.5625 * t * t)
+            else if t < (2 / 2.75) then
+                t = t - (1.5 / 2.75)
+                return (7.5625 * t * t + 0.75)
+            else if t < (2.5 / 2.75) then
+                t = t - (2.25 / 2.75)
+                return (7.5625 * t * t + 0.9375)
+            else
+                t = t - (2.625 / 2.75)
+                return (7.5625 * t * t + 0.984375)
+            end if
+        end function
+        
+        function easeInOutBounce(t as Float) as Float
+            if t < 0.5 then
+                return easeInBounce(t * 2) / 2
+            else
+                return easeOutBounce(t * 2 - 1) / 2 + 0.5
+            end if
+        end function
+        
+        function easeOutInBounce(t as Float) as Float
+            if t < 0.5 then
+                return easeOutBounce(t * 2) / 2
+            else
+                return easeInBounce((t - 0.5) * 2) / 2 + 0.5
+            end if
+        end function
+    end namespace
 end namespace
 
 ' Private methods
@@ -77,6 +212,12 @@ namespace _animate
             end for
         end if
 
+        customEaseFunction = invalid
+        if (_animate.is.func(animationParams.easeFunction))
+            customEaseFunction = animationParams.easeFunction
+            animationParams.easeFunction = "linear"
+        end if
+
         targetsLength = nodeTargets.count()
         for i = 0 to targetsLength - 1
             nodeTarget = nodeTargets[i]
@@ -101,7 +242,7 @@ namespace _animate
 
             animation = {
                 subtype: _animate.utils.nodes.Animation,
-                children: _animate.getTargetInterpolators(nodeTarget, finalParams, _animate.utils.shallowCopy(finalInterpolatorParams))
+                children: _animate.getTargetInterpolators(nodeTarget, finalParams, _animate.utils.shallowCopy(finalInterpolatorParams), finalAnimationParams.duration, customEaseFunction)
             }
 
             if (animation.children.count() > 0)
@@ -110,7 +251,7 @@ namespace _animate
                     alternatedParams.direction = "reverse"
                     alternated = {
                         subtype: _animate.utils.nodes.Animation,
-                        children: _animate.getTargetInterpolators(nodeTarget, alternatedParams, _animate.utils.shallowCopy(finalInterpolatorParams))
+                        children: _animate.getTargetInterpolators(nodeTarget, alternatedParams, _animate.utils.shallowCopy(finalInterpolatorParams), finalAnimationParams.duration, customEaseFunction)
                     }
 
                     animation.append(finalAnimationParams)
@@ -155,7 +296,7 @@ namespace _animate
         return animations
     end function
 
-    function getTargetInterpolators(nodeTarget as object, params as object, globalInterpolatorParams as object) as object
+    function getTargetInterpolators(nodeTarget as object, params as object, globalInterpolatorParams as object, duration as float, customEaseFunction as dynamic) as object
         interpolators = []
         direction = params.direction
         if (direction = invalid)
@@ -167,22 +308,13 @@ namespace _animate
             ' Thanks Roku for not letting us split if statements
             ' in multiple lines. This is very readable! :)
             if (_animate.is.valid(item.value) and (_animate.is.special.prop(item.key) or nodeTarget.hasField(item.key)))
-                interpolator = _animate.getPropertyInterpolator(nodeTarget, item.key, item.value)
+                interpolator = _animate.getPropertyInterpolator(nodeTarget, item.key, item.value, duration, customEaseFunction)
                 if (interpolator <> invalid)
                     finalInterpolator = globalInterpolatorParams
                     finalInterpolator.append(interpolator)
 
                     if (direction = "reverse")
                         finalInterpolator.keyValue.reverse()
-                    end if
-
-                    if (finalInterpolator.key = invalid)
-                        keyValueCount = finalInterpolator.keyValue.count()
-                        finalInterpolator.key = []
-                        _step = 1 / (keyValueCount - 1)
-                        for i = 0 to keyValueCount - 1
-                            finalInterpolator.key.push(i * _step)
-                        end for
                     end if
 
                     interpolators.push(_animate.utils.shallowCopy(finalInterpolator))
@@ -192,7 +324,7 @@ namespace _animate
         return interpolators
     end function
 
-    function getPropertyInterpolator(nodeTarget as object, property as string, value as dynamic) as dynamic
+    function getPropertyInterpolator(nodeTarget as object, property as string, value as dynamic, duration, customEaseFunction as dynamic) as dynamic
         if (property = "translation" and _animate.is.arr2d(value))
             value = [
                 nodeTarget.translation[0] + cdbl(value[0]),
@@ -218,7 +350,7 @@ namespace _animate
 
         if (property = "rotation" and _animate.is.str(value) and value.endsWith("deg"))
             degrees = value.tokenize("deg")[0].toFloat()
-            value = degrees * 0.01745329
+            value = degrees * _animate.utils.constants.radiansFactor
         end if
 
         if (property = "scale" and _animate.is.number(value))
@@ -241,9 +373,23 @@ namespace _animate
             return invalid
         end if
 
+        keyValue = [currentValue, value]
+
+        if (not _animate.is.colorField(property) and customEaseFunction <> invalid)
+            keyValue = _animate.utils.generateKeyValues(currentValue, value, 60 * duration, customEaseFunction)
+        end if
+
+        keyValueCount = keyValue.count()
+        key = []
+        _step = 1 / (keyValueCount - 1)
+        for i = 0 to keyValueCount - 1
+            key.push(i * _step)
+        end for
+
         interpolator.append({
             fieldToInterp: `${nodeTarget.id}.${property}`,
-            keyValue: [currentValue, value]
+            keyValue: keyValue,
+            key: key
         })
 
         return interpolator
@@ -432,7 +578,6 @@ namespace _animate
 
         function getInterpolatorParams() as object
             return [
-                "key",
                 "fraction",
                 "reverse"
             ]
@@ -475,6 +620,30 @@ namespace _animate
             return copy
         end function
 
+        function generateKeyValues(_start as dynamic, _end as dynamic, frames as float, easeFunc as function)
+            keyFrames = []
+            for frame = 0 to cint(frames) - 1
+                ' Normalize the current frame number to the range [0, 1]
+                normalizedFrame = frame / (frames - 1)
+                ' Apply the easing function
+                easedFrame = easeFunc(normalizedFrame)
+                
+                if _animate.is.arr2d(_start) and _animate.is.arr2d(_end) then
+                    ' Map the result to the range [start, end] for each component
+                    d1 = _start[0] + (_end[0] - _start[0]) * easedFrame
+                    d2 = _start[1] + (_end[1] - _start[1]) * easedFrame
+                    value = [d1, d2]
+                else
+                    ' Map the result to the range [start, end]
+                    value = _start + (_end - _start) * easedFrame
+                end if
+
+                ' Add the calculated value to the list of keyframes
+                keyFrames.push(value)
+            end for
+            return keyFrames
+        end function
+
         enum nodes
             Animation = "Animation"
             ParallelAnimation = "ParallelAnimation"
@@ -482,6 +651,11 @@ namespace _animate
             ColorFieldInterpolator = "ColorFieldInterpolator"
             Vector2DFieldInterpolator = "Vector2DFieldInterpolator"
             FloatFieldInterpolator = "FloatFieldInterpolator"
+        end enum
+
+        enum constants
+            pi = 3.14159265
+            radiansFactor = 0.01745329
         end enum
     end namespace
 end namespace

@@ -91,17 +91,14 @@ namespace tests
             result = _animate.create({
                 targets: m.r1,
                 duration: 33,
-                key: [0, 0.2, 0.19, 0.9, 1],
+                fraction: 0.2,
                 x: 20
             })
 
             m.assertEqual(result.subType, _animate.utils.nodes.Animation)
             m.assertEqual(result.duration, 33)
             m.assertArrayCount(result.children, 1)
-            m.assertArrayCount(result.children[0].key, 5)
-            m.assertEqual(result.children[0].key[0], 0)
-            m.assertEqual(result.children[0].key[1], 0.2)
-            m.assertEqual(result.children[0].key[2], 0.19)
+            m.assertEqual(result.children[0].fraction, 0.2)
         end function
 
         @it("generates parallel animation for multiple targets")
@@ -449,11 +446,6 @@ namespace tests
                 return key
             end function
 
-            stringFunc = function(t, i, l)
-                funcs = ["inOutQuad", "inOutCubic", "inOutQuartic"]
-                return funcs[i]
-            end function
-
             floatFunc = function(t, i, l)
                 return (i + 1) / 100
             end function
@@ -465,12 +457,10 @@ namespace tests
                 repeat: boolFunc,
                 delay: integerFunc,
                 duration: integerFunc,
-                easeFunction: stringFunc,
                 easeInPercent: floatFunc,
                 easeOutPercent: floatFunc,
                 optional: boolFunc,
                 ' interpolator params
-                key: keyFunc,
                 fraction: floatFunc,
                 reverse: boolFunc
             })
@@ -481,13 +471,11 @@ namespace tests
                 m.assertEqual(animation.repeat, boolFunc(0, i, 0))
                 m.assertEqual(animation.delay, integerFunc(0, i, 0))
                 m.assertEqual(animation.duration, integerFunc(0, i, 0))
-                m.assertEqual(animation.easeFunction, stringFunc(0, i, 0))
                 m.assertEqual(animation.easeInPercent, floatFunc(0, i, 0))
                 m.assertEqual(animation.easeOutPercent, floatFunc(0, i, 0))
                 m.assertEqual(animation.optional, boolFunc(0, i, 0))
 
                 interp = animation.children[0]
-                m.assertEqual(interp.key, keyFunc(0, i, 0))
                 m.assertEqual(interp.fraction, floatFunc(0, i, 0))
                 m.assertEqual(interp.reverse, boolFunc(0, i, 0))
             end for
@@ -553,6 +541,83 @@ namespace tests
             m.assertEqual(tl2.nodeObject.children[0].children[0].fieldToInterp, "r1.scale")
             tl2.add({ target: "r3", x: 30 })
             m.assertEqual(tl2.nodeObject.children[1].children[0].fieldToInterp, "r3.translation")
+        end function
+
+        @describe("custom interpolator functions")
+
+        @it("can use custom interpolator functions")
+        function _()
+            result = _animate.create({
+                target: "r1",
+                width: 200,
+                easeFunction: function(t)
+                    return t ' linear ease
+                end function
+            })
+
+            ' For a duration of 1s, 60 frames should have been generated
+            m.assertArrayCount(result.children[0].keyValue, 60)
+            m.assertArrayCount(result.children[0].key, 60)
+            m.assertEqual(result.children[0].keyValue[0], 0.0)
+            m.assertEqual(result.children[0].keyValue[59], 200.0)
+            m.assertEqual(result.children[0].key[0], 0.0)
+            m.assertEqual(result.children[0].key[59], 1.0)
+        end function
+
+        @it("considers 2d array values")
+        function _()
+            m.r1.translation = [23, 45]
+            result = _animate.create({
+                target: "r1",
+                translateX: 200,
+                easeFunction: function(t)
+                    return t ' linear ease
+                end function
+            })
+
+            ' For a duration of 1s, 60 frames should have been generated
+            m.assertArrayCount(result.children[0].keyValue, 60)
+            m.assertArrayCount(result.children[0].key, 60)
+            m.assertEqual(result.children[0].keyValue[0], [23.0, 45.0])
+            m.assertEqual(result.children[0].keyValue[59], [223.0, 45.0])
+            m.assertEqual(result.children[0].key[0], 0.0)
+            m.assertEqual(result.children[0].key[59], 1.0)
+        end function
+
+        @it("does not crash with penner functions")
+        function _()
+            funcs = [
+                animate.penner.easeInSine,
+                animate.penner.easeOutSine,
+                animate.penner.easeInOutSine,
+                animate.penner.easeOutInSine,
+                animate.penner.easeInCirc,
+                animate.penner.easeOutCirc,
+                animate.penner.easeInOutCirc,
+                animate.penner.easeOutInCirc,
+                animate.penner.easeInBack,
+                animate.penner.easeOutBack,
+                animate.penner.easeInOutBack,
+                animate.penner.easeOutInBack,
+                animate.penner.easeInBounce,
+                animate.penner.easeOutBounce,
+                animate.penner.easeInOutBounce,
+                animate.penner.easeOutInBounce
+            ]
+
+            for each f in funcs
+                ? `Checking ${f}`
+                result = _animate.create({
+                    target: "r1",
+                    width: 200,
+                    easeFunction: f
+                })
+
+                m.assertArrayCount(result.children[0].keyValue, 60)
+                m.assertArrayCount(result.children[0].key, 60)
+                m.assertEqual(result.children[0].key[0], 0.0)
+                m.assertEqual(result.children[0].key[59], 1.0)
+            end for
         end function
     end class
 end namespace
