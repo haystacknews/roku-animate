@@ -497,45 +497,62 @@ namespace tests
 
         @it("parallel timeline")
         function _()
-            tl = animate.timeline({ target: m.r1, translateX: 20, delay: 0.8 })
+            tl = animate.timeline({
+                targets: m.r1,
+                ' This one should be ignored
+                translateX: 20,
+                delay: 0.8,
+                repeat: true
+            })
+            
             m.assertEqual(tl.nodeObject.subtype, _animate.utils.nodes.ParallelAnimation)
-            m.assertEqual(tl.nodeObject.children[0].subtype, _animate.utils.nodes.Animation)
-            m.assertEqual(tl.nodeObject.children[0].children[0].fieldToInterp, "r1.translation")
-            m.assertEqual(tl.nodeObject.children[0].delay, 0.8)
+            m.assertArrayCount(tl.nodeObject.children, 0)
+            m.assertEqual(tl.nodeObject.delay, 0.8)
+            m.assertTrue(tl.nodeObject.repeat)
 
-            tl2 = tl.add({ target: m.r2, scale: 2.5, delay: 2 })
+            tl2 = tl.add({
+                ' target and delay should be inherited
+                ' repeat should not be inherited
+                scale: 0.2
+            })
 
-            m.assertEqual(tl2.nodeObject.children[1].subtype, _animate.utils.nodes.Animation)
-            m.assertEqual(tl2.nodeObject.children[1].children[0].fieldToInterp, "r2.scale")
-            m.assertEqual(tl2.nodeObject.children[1].delay, 2)
+            m.assertArrayCount(tl2.nodeObject.children, 1)
+            m.assertEqual(tl2.nodeObject.children[0].subtype, _animate.utils.nodes.Animation)
+            m.assertEqual(tl2.nodeObject.children[0].children[0].fieldToInterp, "r1.scale")
+            m.assertEqual(tl2.nodeObject.children[0].delay, 0.8)
+            m.assertInvalid(tl2.nodeObject.children[0].repeat)
+
+            tl3 = tl.add({ targets: "r2", x: 20, delay: 2 })
+
+            m.assertArrayCount(tl3.nodeObject.children, 2)
+            m.assertEqual(tl3.nodeObject.children[1].subtype, _animate.utils.nodes.Animation)
+            m.assertEqual(tl3.nodeObject.children[1].children[0].fieldToInterp, "r2.translation")
+            m.assertEqual(tl3.nodeObject.children[1].delay, 2)
+            m.assertInvalid(tl3.nodeObject.children[1].repeat)
         end function
 
         @it("sequential timeline")
         function _()
-            tl = animate.timeline({ target: m.r1, translateX: 20, delay: 0.8 }, true)
+            tl = animate.timeline({ target: m.r1, sequential: true, delay: 0.8 })
             m.assertEqual(tl.nodeObject.subtype, _animate.utils.nodes.SequentialAnimation)
         end function
 
-        @it("specific params can be inherited")
+        @it("can change from targets to target in add() and vice versa")
         function _()
             r3 = m.canvas.createChild("Rectangle")
             r3.id = "r3"
 
-            ' everyone except `repeat` and `translateX` should be inherited
-            tl = animate.timeline({
-                targets: "r1 r2",
-                translateX: 20,
-                easeFunction: "linear",
-                duration: 2,
-                delay: 1,
-                repeat: true
-            }, true)
+            tl = animate.timeline({ targets: "r1", sequential: true, delay: 0.8 })
+            tl.add({ target: "r2", x: 20, delay: 2 })
+            m.assertEqual(tl.nodeObject.children[0].children[0].fieldToInterp, "r2.translation")
+            tl.add({ targets: "r3", x: 30 })
+            m.assertEqual(tl.nodeObject.children[1].children[0].fieldToInterp, "r3.translation")
 
-            m.assertEqual(tl.nodeObject.subtype, _animate.utils.nodes.SequentialAnimation)
-            m.assertEqual(tl.nodeObject.children[0].subtype, _animate.utils.nodes.ParallelAnimation)
-            m.assertTrue(tl.nodeObject.repeat)
-
-            m.assertEqual(tl.nodeObject.children[0].children[0].subtype, _animate.utils.nodes.Animation)
+            tl2 = animate.timeline({ target: "r2", sequential: true, delay: 0.8 })
+            tl2.add({ targets: "r1", scale: 2, delay: 2 })
+            m.assertEqual(tl2.nodeObject.children[0].children[0].fieldToInterp, "r1.scale")
+            tl2.add({ target: "r3", x: 30 })
+            m.assertEqual(tl2.nodeObject.children[1].children[0].fieldToInterp, "r3.translation")
         end function
     end class
 end namespace

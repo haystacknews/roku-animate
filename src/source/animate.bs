@@ -10,8 +10,8 @@ namespace animate
         return rnd(max - min) + min
     end function
 
-    function timeline(params as object, sequential = false as boolean) as object
-        return new _animate.Timeline(params, sequential)
+    function timeline(params as object) as object
+        return new _animate.Timeline(params)
     end function
 end namespace
 
@@ -277,9 +277,19 @@ namespace _animate
     end function
 
     class Timeline
-        sub new(initialParams as object, sequential as boolean)
-            initialParams = initialParams
-            m.inheritableParams = _animate.utils.extractParams(initialParams, [
+        private nodeObject as object = {}
+
+        sub new(params as object)
+            sequential = false
+            if (params.sequential <> invalid and _animate.is.bool(params.sequential))
+                sequential = params.sequential
+                params.delete("sequential")
+            end if
+
+            animationAndInterpolatorParams = _animate.utils.extractAnimationParams(params)
+            animationAndInterpolatorParams.append(_animate.utils.extractInterpolatorParams(params))
+
+            m.inheritableParams = _animate.utils.extractParams(params, [
                 "targets",
                 "target",
                 "easeFunction",
@@ -287,14 +297,24 @@ namespace _animate
                 "delay"
             ])
 
-            nodeName = sequential ? _animate.utils.nodes.SequentialAnimation : _animate.utils.nodes.ParallelAnimation
+            nodeName = _animate.utils.nodes.ParallelAnimation
+            if (sequential)
+                nodeName = _animate.utils.nodes.SequentialAnimation
+            end if
+
             m.nodeObject = {
                 subtype: nodeName,
-                children: [_animate.create(initialParams)]
+                children: []
             }
+            m.nodeObject.append(animationAndInterpolatorParams)
         end sub
 
         function add(params as object) as object
+            if (params.target <> invalid)
+                params.targets = params.target
+                params.delete("target")
+            end if
+
             finalParams = _animate.utils.shallowCopy(m.inheritableParams)
             finalParams.append(params)
             m.nodeObject.children.push(_animate.create(finalParams))
@@ -309,6 +329,10 @@ namespace _animate
     namespace is
         function valid(x as dynamic) as boolean
             return x <> invalid
+        end function
+
+        function bool(x as dynamic) as boolean
+            return _animate.is.valid(x) and getInterface(x, "ifBoolean") <> invalid
         end function
 
         function str(x as dynamic) as boolean
