@@ -50,6 +50,7 @@
     "ignores": [
         "components/lib/**/*",
         "source/lib/**/*",
+        "source/**/*.spec.bs",
         "**/bslib.brs"
     ]
 }

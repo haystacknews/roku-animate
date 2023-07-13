@@ -18,26 +18,26 @@ namespace animate
     ' hopefully the math is ok :)
     namespace penner
         ' Start slow and accelerate
-        function easeInSine(t as Float) as Float
+        function easeInSine(t as float) as float
             return -1 * cos(t * _animate.utils.constants.radiansFactor) + 1
         end function
-        
+
         ' Start fast and decelerate
-        function easeOutSine(t as Float) as Float
+        function easeOutSine(t as float) as float
             return sin(t * _animate.utils.constants.radiansFactor)
         end function
-        
+
         ' Start slow and accelerate and then decelerate
-        function easeInOutSine(t as Float) as Float
+        function easeInOutSine(t as float) as float
             return -0.5 * (cos(_animate.utils.constants.pi * t) - 1)
         end function
-        
+
         ' Start fast and decelerate and then accelerate
-        function easeOutInSine(t as Float) as Float
-            if t < 0.5 then
-                return easeOutSine(t * 2) / 2
+        function easeOutInSine(t as float) as float
+            if (t < 0.5)
+                return animate.penner.easeOutSine(t * 2) / 2
             else
-                return easeInSine((t - 0.5) * 2) / 2 + 0.5
+                return animate.penner.easeInSine((t - 0.5) * 2) / 2 + 0.5
             end if
         end function
 
@@ -45,29 +45,29 @@ namespace animate
         ' accelerates and decelerates respectively in a manner that resembles
         ' a quarter of a circle.
 
-        function easeInCirc(t as Float) as Float
+        function easeInCirc(t as float) as float
             return -1 * (sqr(1 - t * t) - 1)
         end function
-        
-        function easeOutCirc(t as Float) as Float
+
+        function easeOutCirc(t as float) as float
             t = t - 1
             return sqr(1 - t * t)
         end function
-        
-        function easeInOutCirc(t as Float) as Float
-            if t < 0.5 then
+
+        function easeInOutCirc(t as float) as float
+            if (t < 0.5)
                 return -0.5 * (sqr(1 - 4 * t * t) - 1)
             else
                 t = t - 1
                 return 0.5 * (sqr(1 - 4 * t * t) + 1)
             end if
         end function
-        
-        function easeOutInCirc(t as Float) as Float
-            if t < 0.5 then
-                return easeOutCirc(t * 2) / 2
+
+        function easeOutInCirc(t as float) as float
+            if (t < 0.5)
+                return animate.penner.easeOutCirc(t * 2) / 2
             else
-                return easeInCirc((t - 0.5) * 2) / 2 + 0.5
+                return animate.penner.easeInCirc((t - 0.5) * 2) / 2 + 0.5
             end if
         end function
 
@@ -78,34 +78,34 @@ namespace animate
         ' `s` is a constant that determines the amount of overshoot.
         ' The value 1.70158 results in about a 10% overshoot.
 
-        function easeInBack(t as Float) as Float
+        function easeInBack(t as float) as float
             s = 1.70158
             return t * t * ((s + 1) * t - s)
         end function
-        
-        function easeOutBack(t as Float) as Float
+
+        function easeOutBack(t as float) as float
             s = 1.70158
             t = t - 1
             return (t * t * ((s + 1) * t + s) + 1)
         end function
-        
-        function easeInOutBack(t as Float) as Float
+
+        function easeInOutBack(t as float) as float
             ' Adjust the overshoot to achieve a visually
             ' pleasing result for the combined "in" and "out" animation.
             s = 1.70158 * 1.525
-            if t < 0.5 then
+            if (t < 0.5)
                 return (t * t * ((s + 1) * t - s)) / 2
             else
                 t = t - 2
                 return (t * t * ((s + 1) * t + s) + 2) / 2
             end if
         end function
-        
-        function easeOutInBack(t as Float) as Float
-            if t < 0.5 then
-                return easeOutBack(t * 2) / 2
+
+        function easeOutInBack(t as float) as float
+            if (t < 0.5)
+                return animate.penner.easeOutBack(t * 2) / 2
             else
-                return easeInBack((t - 0.5) * 2) / 2 + 0.5
+                return animate.penner.easeInBack((t - 0.5) * 2) / 2 + 0.5
             end if
         end function
 
@@ -113,17 +113,17 @@ namespace animate
         ' The constants in the function (7.5625, 2.75, etc.)
         ' are chosen empirically to make the bounce effect look good.
 
-        function easeInBounce(t as Float) as Float
-            return 1 - easeOutBounce(1 - t)
+        function easeInBounce(t as float) as float
+            return 1 - animate.penner.easeOutBounce(1 - t)
         end function
-        
-        function easeOutBounce(t as Float) as Float
-            if t < (1 / 2.75) then
+
+        function easeOutBounce(t as float) as float
+            if (t < (1 / 2.75))
                 return (7.5625 * t * t)
-            else if t < (2 / 2.75) then
+            else if (t < (2 / 2.75))
                 t = t - (1.5 / 2.75)
                 return (7.5625 * t * t + 0.75)
-            else if t < (2.5 / 2.75) then
+            else if (t < (2.5 / 2.75))
                 t = t - (2.25 / 2.75)
                 return (7.5625 * t * t + 0.9375)
             else
@@ -131,20 +131,20 @@ namespace animate
                 return (7.5625 * t * t + 0.984375)
             end if
         end function
-        
-        function easeInOutBounce(t as Float) as Float
-            if t < 0.5 then
-                return easeInBounce(t * 2) / 2
+
+        function easeInOutBounce(t as float) as float
+            if (t < 0.5)
+                return animate.penner.easeInBounce(t * 2) / 2
             else
-                return easeOutBounce(t * 2 - 1) / 2 + 0.5
+                return animate.penner.easeOutBounce(t * 2 - 1) / 2 + 0.5
             end if
         end function
-        
-        function easeOutInBounce(t as Float) as Float
-            if t < 0.5 then
-                return easeOutBounce(t * 2) / 2
+
+        function easeOutInBounce(t as float) as float
+            if (t < 0.5)
+                return animate.penner.easeOutBounce(t * 2) / 2
             else
-                return easeInBounce((t - 0.5) * 2) / 2 + 0.5
+                return animate.penner.easeInBounce((t - 0.5) * 2) / 2 + 0.5
             end if
         end function
     end namespace
@@ -627,8 +627,8 @@ namespace _animate
                 normalizedFrame = frame / (frames - 1)
                 ' Apply the easing function
                 easedFrame = easeFunc(normalizedFrame)
-                
-                if _animate.is.arr2d(_start) and _animate.is.arr2d(_end) then
+
+                if (_animate.is.arr2d(_start) and _animate.is.arr2d(_end))
                     ' Map the result to the range [start, end] for each component
                     d1 = _start[0] + (_end[0] - _start[0]) * easedFrame
                     d2 = _start[1] + (_end[1] - _start[1]) * easedFrame

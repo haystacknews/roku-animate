@@ -39,7 +39,7 @@ sub start(_ = invalid as dynamic)
         duration: function(el, i, t)
             dur = (rnd(600) / 1000) + 1.2
             return dur
-        end function
+        end function,
         ' bs:disable-next-line
         delay: function(el, i, t)
             del = rnd(400) / 1000
