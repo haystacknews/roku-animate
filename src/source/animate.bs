@@ -17,22 +17,20 @@ namespace animate
     ' All of these have been generated with GPT4,
     ' hopefully the math is ok :)
     namespace penner
-        ' Start slow and accelerate
+        ' The *Sine functions create animations that accelerate
+        ' or decelerate according to a sinusoidal curve.
         function easeInSine(t as float) as float
             return -1 * cos(t * _animate.utils.constants.radiansFactor) + 1
         end function
 
-        ' Start fast and decelerate
         function easeOutSine(t as float) as float
             return sin(t * _animate.utils.constants.radiansFactor)
         end function
 
-        ' Start slow and accelerate and then decelerate
         function easeInOutSine(t as float) as float
             return -0.5 * (cos(_animate.utils.constants.pi * t) - 1)
         end function
 
-        ' Start fast and decelerate and then accelerate
         function easeOutInSine(t as float) as float
             if (t < 0.5)
                 return animate.penner.easeOutSine(t * 2) / 2
