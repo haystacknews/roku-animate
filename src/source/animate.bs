@@ -71,6 +71,64 @@ namespace animate
             end if
         end function
 
+        ' The *Elastic functions create animations that overshoot
+        ' the final state and then oscillate around it before settling,
+        ' creating an elastic effect.
+        ' `p` is the period of the oscillation
+        ' `s` is the phase shift of the oscillation
+        ' These values have been chosen empirically.
+
+        function easeInElastic(t as Float) as Float
+            if (t = 0)
+                return 0
+            end if
+            if (t = 1)
+                return 1
+            end if
+            p = 0.3
+            s = p / 4
+            t = t - 1
+            return -(2 ^ (10 * t) * sin((t - s) * (2 * _animate.utils.constants.pi) / p))
+        end function
+        
+        function easeOutElastic(t as Float) as Float
+            if (t = 0)
+                return 0
+            end if
+            if (t = 1)
+                return 1
+            end if
+            p = 0.3
+            s = p / 4
+            return 2 ^ (-10 * t) * sin((t - s) * (2 * _animate.utils.constants.pi) / p) + 1
+        end function
+        
+        function easeInOutElastic(t as Float) as Float
+            if (t = 0)
+                return 0
+            end if
+            if (t = 1)
+                return 1
+            end if
+            p = 0.45
+            s = p / 4
+            if (t < 0.5)
+                t = t - 1
+                return -0.5 * (2 ^ (10 * t) * sin((t - s) * (2 * _animate.utils.constants.pi) / p))
+            else
+                t = t - 1
+                return 0.5 * (2 ^ (-10 * t) * sin((t - s) * (2 * _animate.utils.constants.pi) / p)) + 1
+            end if
+        end function
+        
+        function easeOutInElastic(t as Float) as Float
+            if (t < 0.5)
+                return animate.penner.easeOutElastic(t * 2) / 2
+            else
+                return animate.penner.easeInElastic((t - 0.5) * 2) / 2 + 0.5
+            end if
+        end function
+
         ' The *Back functions create an animation
         ' that overshoots the final state and then comes back.
         ' This creates a "pullback" or "draw back" effect at the beginning
