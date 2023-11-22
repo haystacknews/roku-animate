@@ -19,6 +19,12 @@ m.animation = animate.create({
 
 > Note: The resulting animation must live in the `m` scope or in the `m.top` scope to execute.
 
+# Install
+
+Copy the file `src/source/animate.bs` into your project.
+
+> TODO: Upload to `ropm`
+
 # Documentation
 
 ## Defining targets
