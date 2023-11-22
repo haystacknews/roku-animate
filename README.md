@@ -357,3 +357,5 @@ m.turtle.control = "start"
 # Contribute
 
 You can see our issues list for things that need to be implemented. For any questions ping me ([@arturocuya](https://github.com/arturocuya)) on the Roku Developers [Slack channel](https://join.slack.com/t/rokudevelopers/shared_invite/zt-1fwucni9w-WizAcwB_rhL8nTctkO7trQ).
+
+> *Inspired by https://animejs.com/*
