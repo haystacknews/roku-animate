@@ -19,6 +19,42 @@ m.animation = animate.create({
 
 > Note: The resulting animation must live in the `m` scope or in the `m.top` scope to execute.
 
+For comparison, the normal way of defining this animation is through an XML object, which is way more verbose
+
+```xml
+<Animation
+    id="myAnimation"
+    duration="1"
+>
+    <Vector2DFieldInterpolator
+        fieldToInterp="rectId.translation",
+        key="[0,1]"
+        keyValue="[[200, 200],[400, 200]]"
+    />
+    <Vector2DFieldInterpolator
+        fieldToInterp="rectId.scale",
+        key="[0,1]"
+        keyValue="[[1,1], [1.5,1.5]]"
+    />
+    <FloatFieldInterpolator
+        fieldToInterp="rectId.rotation",
+        key="[0,1]"
+        keyValue="[0, 2.09439]"
+    />
+</Animation>
+```
+
+And less readable since the definition is in a different file from the code that executes it.
+
+```brs
+sub runAnimation()
+    m.animation = m.top.findNode("myAnimation")
+    m.animation.control = "start"
+end sub
+```
+
+`animate` does all of this in one function call.
+
 # Install
 
 Copy the file `src/source/animate.bs` into your project.
