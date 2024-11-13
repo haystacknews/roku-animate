@@ -374,7 +374,9 @@ A sequential timeline can be implemented by setting the `sequential` parameter t
 
 ```brs
 ' Sequential timeline where the node follows the path of a rectangle (move right, down, left, up)
+' (You need to set sequential = true. If false, the timeline will be parallel)
 m.turtle = animate.timeline({
+    sequential: true,
     targets: "rect1",
     duration: 2
 }).add({
